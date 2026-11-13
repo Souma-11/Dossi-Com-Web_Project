@@ -1,176 +1,127 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, UserPlus, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { ROLE_ROUTES } from '../utils/roleRoutes';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
+    try {
+      const loggedUser = await login(email.trim(), password);
+      const role = loggedUser?.role?.toLowerCase();
 
-    if (!email.trim() || !password.trim()) {
-      setError('Veuillez remplir tous les champs.');
-      return;
-    }
+      if (!role) {
+        setError('Connexion réussie, mais aucun rôle n’est associé à ce compte.');
+        return;
+      }
 
-    setIsLoading(true);
-    const result = await login(email.trim(), password);
-    setIsLoading(false);
-
-    if (result.success) {
-      const route = ROLE_ROUTES[result.user.role] || '/';
-      navigate(route, { replace: true });
-    } else {
-      setError(result.error);
+      navigate(`/${role}`, { replace: true });
+    } catch (err) {
+      if (!err.response) {
+        setError('Serveur backend inaccessible. Vérifiez que le terminal server est démarré.');
+      } else {
+        setError(err.response?.data?.message || 'Identifiant ou mot de passe incorrect.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
-
-  // Remplissage rapide pour la démo
-  const fillDemo = (email, pwd) => {
-    setEmail(email);
-    setPassword(pwd);
-    setError('');
-  };
-
-  const demoUsers = [
-    { label: '🏥 Accueil', email: 'accueil@dossicom.fr', password: 'Accueil@123' },
-    { label: '💉 Infirmier', email: 'infirmier@dossicom.fr', password: 'Infirmier@123' },
-    { label: '👨‍⚕️ Médecin', email: 'medecin@dossicom.fr', password: 'Medecin@123' },
-    { label: '📊 Responsable', email: 'responsable@dossicom.fr', password: 'Resp@123' },
-    { label: '🧑 Patient', email: 'patient@dossicom.fr', password: 'Patient@123' },
-  ];
 
   return (
-    <div className="max-w-md mx-auto my-12 bg-white p-8 rounded-xl shadow-md border border-gray-100">
-      {/* En-tête */}
-      <div className="text-center mb-6">
-        <div className="inline-flex p-3 bg-brand-bg rounded-full text-brand-blue mb-3">
-          <Shield size={32} />
+    <div className="px-4 py-8 min-h-[calc(100vh-8.5rem)] flex items-center justify-center">
+      <div className="max-w-md w-full dc-card p-6 sm:p-8">
+        <div className="flex flex-col items-center text-center mb-6">
+          <img
+            src="/dossicom-logo-400.png"
+            srcSet="/dossicom-logo-800.png 2x"
+            alt="Dossi'Com"
+            width="200"
+            className="block mx-auto mb-4 w-[200px] h-auto"
+          />
+          <h1 className="dc-h1">Extranet</h1>
+          <p className="text-sm font-medium text-[#334155]">Identifiant et mot de passe</p>
         </div>
-        <h1 className="font-title text-2xl text-brand-navy">Espace Extranet Dossi'Com</h1>
-        <p className="text-brand-slate text-sm mt-1">Connectez-vous avec vos identifiants</p>
-      </div>
 
-      {/* Message d'erreur */}
-      {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">
-          <AlertCircle size={16} className="shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 p-3.5 rounded-[8px] bg-red-50 border border-[#C8102E] text-[#991B1B] font-semibold text-sm"
+          >
+            {error}
+          </div>
+        )}
 
-      {/* Formulaire */}
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Email */}
-        <div>
-          <label className="block text-xs font-bold text-brand-navy uppercase mb-1">
-            Adresse email
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-3 text-brand-slate" size={18} />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="login-email" className="block text-sm font-bold text-[#0B2A5B] mb-1.5">
+              Identifiant
+            </label>
             <input
-              type="email"
+              id="login-email"
+              type="text"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-              className="w-full pl-10 pr-4 py-2 bg-brand-bg border border-gray-200 rounded-lg text-sm text-brand-navy focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition"
-              placeholder="votre@email.fr"
+              placeholder="nom@dossicom.tn"
+              className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-[#475569] focus:border-[#0B4F9E]"
             />
           </div>
-        </div>
 
-        {/* Mot de passe */}
-        <div>
-          <label className="block text-xs font-bold text-brand-navy uppercase mb-1">
-            Mot de passe
-          </label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-3 text-brand-slate" size={18} />
+          <div>
+            <label
+              htmlFor="login-password"
+              className="block text-sm font-bold text-[#0B2A5B] mb-1.5"
+            >
+              Mot de passe
+            </label>
             <input
-              type={showPassword ? 'text' : 'password'}
+              id="login-password"
+              type="password"
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              className="w-full pl-10 pr-10 py-2 bg-brand-bg border border-gray-200 rounded-lg text-sm text-brand-navy focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition"
               placeholder="••••••••"
+              className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-[#475569] focus:border-[#0B4F9E]"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-2.5 text-brand-slate hover:text-brand-navy transition"
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
           </div>
+
+          <button type="submit" disabled={loading} className="dc-btn-primary w-full">
+            <LogIn className="w-4 h-4" />
+            {loading ? 'Connexion...' : 'Se connecter'}
+          </button>
+        </form>
+
+        <div className="text-center mt-4">
+          <span className="text-sm text-[#334155]">
+            Mot de passe oublié ? Contactez le responsable du service.
+          </span>
         </div>
 
-        {/* Bouton de connexion */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-2.5 bg-brand-blue hover:bg-brand-navy text-white font-semibold rounded-lg shadow transition duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isLoading ? (
-            <>
-              <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Connexion en cours…
-            </>
-          ) : (
-            'Se connecter'
-          )}
-        </button>
-      </form>
+        <hr className="my-5 border-[#CBD5E1]" />
 
-      {/* Création de compte patient (seul le patient peut créer son compte) */}
-      <div className="mt-4 text-center">
-        <Link to="/register" className="text-sm text-brand-blue hover:underline font-semibold">
+        <Link to="/register" className="dc-btn-outline w-full text-sm">
+          <UserPlus className="w-4 h-4" />
           Créer un compte patient
         </Link>
-      </div>
 
-      {/* Accès rapide démo */}
-      <div className="mt-6 border-t border-gray-100 pt-5">
-        <p className="text-xs text-center text-brand-slate font-semibold uppercase mb-3">
-          Accès rapide — Comptes de démo
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {demoUsers.map(({ label, email: dEmail, password: dPwd }) => (
-            <button
-              key={dEmail}
-              type="button"
-              onClick={() => fillDemo(dEmail, dPwd)}
-              className="text-xs py-1.5 px-2 rounded-lg border border-gray-200 hover:bg-brand-bg hover:border-brand-blue text-brand-navy transition text-left"
-            >
-              {label}
-            </button>
-          ))}
+        <div className="text-center mt-5">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0B4F9E] hover:underline"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour au tableau de bord public
+          </Link>
         </div>
-        <p className="text-xs text-brand-slate text-center mt-2 opacity-70">
-          Cliquez sur un profil puis "Se connecter"
-        </p>
-      </div>
-
-      {/* Lien retour */}
-      <div className="mt-4 text-center">
-        <Link to="/" className="text-xs text-brand-blue hover:underline">
-          ← Retour à l'accueil public
-        </Link>
       </div>
     </div>
   );

@@ -1,163 +1,222 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, UserRound, Shield, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { UserPlus, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { ROLE_ROUTES } from '../utils/roleRoutes';
+import api from '../services/api';
 
-/**
- * Création de compte patient — seul le patient peut créer son compte (Objectif 2).
- * Les comptes du personnel restent créés par le responsable.
- * Le mot de passe est haché par bcrypt côté serveur (POST /api/auth/register).
- */
 export default function RegisterPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const [formData, setFormData] = useState({
+    nom: '',
+    prenom: '',
+    dateNaissance: '',
+    telephone: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const { register } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!name.trim() || !email.trim() || !password || !confirm) {
-      setError('Veuillez remplir tous les champs.');
+    if (formData.password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères.');
       return;
     }
-    if (password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères.');
-      return;
-    }
-    if (password !== confirm) {
+
+    if (formData.password !== formData.confirmPassword) {
       setError('Les deux mots de passe ne correspondent pas.');
       return;
     }
 
-    setIsLoading(true);
-    const result = await register(name.trim(), email.trim(), password);
-    setIsLoading(false);
+    setLoading(true);
+    try {
+      await api.post('/auth/register', {
+        nom: formData.nom.trim(),
+        prenom: formData.prenom.trim(),
+        date_naissance: formData.dateNaissance || null,
+        telephone: formData.telephone.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        role: 'patient',
+      });
 
-    if (result.success) {
-      navigate(ROLE_ROUTES[result.user.role] || '/patient', { replace: true });
-    } else {
-      setError(result.error);
+      await login(formData.email.trim(), formData.password);
+      navigate('/patient');
+    } catch (err) {
+      const apiMsg = err.response?.data?.message || err.response?.data?.error;
+      setError(apiMsg || 'Impossible de créer le compte. Vérifiez les informations saisies.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const inputClass =
-    'w-full pl-10 pr-4 py-2 bg-brand-bg border border-gray-200 rounded-lg text-sm text-brand-navy focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition';
-
   return (
-    <div className="max-w-md mx-auto my-12 bg-white p-8 rounded-xl shadow-md border border-gray-100">
-      {/* En-tête */}
-      <div className="text-center mb-6">
-        <div className="inline-flex p-3 bg-brand-bg rounded-full text-brand-blue mb-3">
-          <Shield size={32} />
+    <div className="px-4 py-6 min-h-[calc(100vh-8.5rem)] flex items-center justify-center">
+      <div className="max-w-lg w-full dc-card p-6 sm:p-8">
+        <div className="flex flex-col items-center text-center mb-6">
+          <img
+            src="/dossicom-logo-400.png"
+            srcSet="/dossicom-logo-800.png 2x"
+            alt="Dossi'Com"
+            width="200"
+            className="block mx-auto mb-4 w-[200px] h-auto"
+          />
+          <h1 className="dc-h1">Créer un compte patient</h1>
+          <p className="text-sm text-[#334155] mt-1">
+            Accédez au suivi de votre passage et à vos consignes en temps réel.
+          </p>
         </div>
-        <h1 className="font-title text-2xl text-brand-navy">Créer un compte patient</h1>
-        <p className="text-brand-slate text-sm mt-1">
-          Suivez votre passage aux urgences en temps réel.
-        </p>
-      </div>
 
-      {/* Message d'erreur */}
-      {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">
-          <AlertCircle size={16} className="shrink-0" />
-          <span>{error}</span>
+        <div className="mb-5 p-3.5 rounded-[8px] bg-[#EEF3F9] border border-[#CBD5E1] text-sm text-[#0B2A5B] flex items-start gap-2.5">
+          <ShieldAlert className="w-5 h-5 text-[#0B4F9E] shrink-0 mt-0.5" />
+          <span>
+            Espace réservé aux patients. Les comptes du personnel soignant et administratif sont
+            créés par le responsable du service.
+          </span>
         </div>
-      )}
 
-      {/* Formulaire */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-bold text-brand-navy uppercase mb-1">Nom complet</label>
-          <div className="relative">
-            <UserRound className="absolute left-3 top-3 text-brand-slate" size={18} />
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className={inputClass}
-              placeholder="Ex : Jean Dupont"
-            />
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 p-3.5 rounded-[8px] bg-red-50 border border-[#C8102E] text-[#991B1B] font-semibold text-sm"
+          >
+            {error}
           </div>
-        </div>
+        )}
 
-        <div>
-          <label className="block text-xs font-bold text-brand-navy uppercase mb-1">Adresse email</label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-3 text-brand-slate" size={18} />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-[#0B2A5B] mb-1.5">Nom *</label>
+              <input
+                type="text"
+                name="nom"
+                required
+                value={formData.nom}
+                onChange={handleChange}
+                placeholder="Ben Ali"
+                className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-[#475569] focus:border-[#0B4F9E]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[#0B2A5B] mb-1.5">Prénom *</label>
+              <input
+                type="text"
+                name="prenom"
+                required
+                value={formData.prenom}
+                onChange={handleChange}
+                placeholder="Ahmed"
+                className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-[#475569] focus:border-[#0B4F9E]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-[#0B2A5B] mb-1.5">
+                Date de naissance
+              </label>
+              <input
+                type="date"
+                name="dateNaissance"
+                value={formData.dateNaissance}
+                onChange={handleChange}
+                className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0F172A] focus:border-[#0B4F9E]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[#0B2A5B] mb-1.5">Téléphone *</label>
+              <input
+                type="tel"
+                name="telephone"
+                required
+                value={formData.telephone}
+                onChange={handleChange}
+                placeholder="20 123 456"
+                className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-[#475569] focus:border-[#0B4F9E]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-[#0B2A5B] mb-1.5">
+              Identifiant (Email) *
+            </label>
             <input
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
+              name="email"
               required
-              className={inputClass}
-              placeholder="votre@email.fr"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="patient@exemple.tn"
+              className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-[#475569] focus:border-[#0B4F9E]"
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-bold text-brand-navy uppercase mb-1">
-            Mot de passe (8 caractères minimum)
-          </label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-3 text-brand-slate" size={18} />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-              required
-              className={inputClass}
-              placeholder="••••••••"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-[#0B2A5B] mb-1.5">
+                Mot de passe *
+              </label>
+              <input
+                type="password"
+                name="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-[#475569] focus:border-[#0B4F9E]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[#0B2A5B] mb-1.5">Confirmer *</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="••••••••"
+                className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-[#475569] focus:border-[#0B4F9E]"
+              />
+            </div>
           </div>
+
+          <button type="submit" disabled={loading} className="dc-btn-primary w-full mt-2">
+            <UserPlus className="w-4 h-4" />
+            {loading ? 'Création du compte...' : 'Créer mon compte patient'}
+          </button>
+        </form>
+
+        <hr className="my-5 border-[#CBD5E1]" />
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
+          <Link to="/login" className="font-bold text-[#0B4F9E] hover:underline">
+            Déjà inscrit ? Se connecter
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 font-semibold text-[#334155] hover:text-[#0B2A5B]"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Tableau de bord public
+          </Link>
         </div>
-
-        <div>
-          <label className="block text-xs font-bold text-brand-navy uppercase mb-1">
-            Confirmer le mot de passe
-          </label>
-          <div className="relative">
-            <CheckCircle2 className="absolute left-3 top-3 text-brand-slate" size={18} />
-            <input
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              autoComplete="new-password"
-              required
-              className={inputClass}
-              placeholder="••••••••"
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-2.5 bg-brand-blue hover:bg-brand-navy text-white font-semibold rounded-lg shadow transition disabled:opacity-60 flex items-center justify-center gap-2"
-        >
-          {isLoading ? 'Création du compte…' : 'Créer mon compte'}
-        </button>
-      </form>
-
-      {/* Liens */}
-      <div className="mt-5 flex flex-col items-center gap-2 text-sm">
-        <Link to="/login" className="text-brand-blue hover:underline font-semibold">
-          J'ai déjà un compte — Se connecter
-        </Link>
-        <Link to="/" className="text-xs text-brand-slate hover:underline">
-          ← Retour au tableau de bord public
-        </Link>
       </div>
     </div>
   );

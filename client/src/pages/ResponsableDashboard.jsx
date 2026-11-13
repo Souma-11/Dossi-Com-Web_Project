@@ -1,203 +1,118 @@
-import { useState } from 'react';
-import { LayoutDashboard, BedDouble, Users, TrendingUp, Wrench } from 'lucide-react';
-import useApi from '../hooks/useApi';
-import LitModal from '../components/lits/LitModal';
-import PriorityBadge from '../components/ui/PriorityBadge';
-import { LIT_STATUTS, STATUT_LABELS } from '../utils/format';
+import { useState, useEffect } from 'react';
+import { ShieldCheck, Users, Activity, Clock, Building2 } from 'lucide-react';
+import api from '../services/api';
+import { DEMO_PASSAGES, computeServiceStats } from '../data/demoData';
 
-/**
- * Espace Responsable — Supervision (Phase 4).
- * - Indicateurs calculés sur les données RÉELLES (plus de chiffres fictifs)
- * - Grille des box : CLIC sur un box → fenêtre de changement d'état
- *   (libre → occupé → nettoyage) et affectation d'un patient
- * - Temps réel : les box changent d'état instantanément sur tous les postes
- */
 export default function ResponsableDashboard() {
-  const { data: dataPatients, loading: loadingPatients, error } = useApi('/patients', { pollMs: 15000 });
-  const { data: dataLits, loading: loadingLits } = useApi('/lits', { pollMs: 15000 });
-  const [modalLit, setModalLit] = useState(null);
+  const [passages, setPassages] = useState(DEMO_PASSAGES);
 
-  const patients = dataPatients?.patients || [];
-  const lits = dataLits?.lits || [];
+  useEffect(() => {
+    let isMounted = true;
+    api
+      .get('/dossiers')
+      .then((res) => {
+        if (isMounted && Array.isArray(res.data) && res.data.length > 0) {
+          setPassages(res.data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
-  // ─── Indicateurs (calculés côté client à partir des données réelles) ──────
-  const patientsActifs = patients.filter((p) => p.statut !== 'sorti');
-  const litsUtilisables = lits.filter((l) => l.statut !== 'maintenance');
-  const litsOccupes = lits.filter((l) => l.statut === 'occupe');
-  const saturation =
-    litsUtilisables.length > 0
-      ? Math.round((litsOccupes.length / litsUtilisables.length) * 100)
-      : 0;
-  const litsLibres = lits.filter((l) => l.statut === 'libre');
-  const enNettoyage = lits.filter((l) => l.statut === 'nettoyage');
-  const enMaintenance = lits.filter((l) => l.statut === 'maintenance');
+  const stats = computeServiceStats(passages);
 
   return (
-    <div className="space-y-6">
-      {/* En-tête */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h1 className="font-title text-2xl text-brand-navy flex items-center gap-2">
-          <LayoutDashboard className="text-brand-turquoise" />
-          Espace Responsable — Supervision
-        </h1>
-        <p className="text-brand-slate text-sm mt-1">
-          Pilotage de l'activité du service et gestion des ressources — données temps réel.
-        </p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 min-h-[calc(100vh-8.5rem)]">
+      <div className="dc-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="dc-h1">Espace Responsable — Supervision du service</h1>
+          <p className="text-sm text-[#334155] mt-1">
+            Pilotage des capacités d&apos;accueil, occupation des box et suivi global des flux.
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-[8px] bg-[#EEF3F9] border border-[#CBD5E1] text-sm font-bold text-[#0B2A5B] self-start sm:self-auto">
+          <ShieldCheck className="w-4 h-4 text-[#0E7C86]" />
+          Supervision active
+        </span>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {/* Statistiques temps réel */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4">
-          <div className="p-3 bg-blue-50 rounded-full text-brand-blue">
-            <Users size={24} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="dc-card p-5 border-l-4 border-l-[#0B4F9E]">
+          <div className="flex items-center justify-between text-sm font-semibold text-[#334155] mb-2">
+            <span>Saturation du service</span>
+            <Activity className="w-5 h-5 text-[#0B4F9E]" />
           </div>
-          <div>
-            <p className="text-sm font-bold text-brand-slate">Patients actifs</p>
-            <p className="text-2xl font-bold text-brand-navy">{patientsActifs.length}</p>
-          </div>
+          <div className="font-display font-bold text-3xl text-[#0B2A5B]">{stats.saturation}%</div>
         </div>
 
-        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4">
-          <div className="p-3 bg-orange-50 rounded-full text-orange-500">
-            <TrendingUp size={24} />
+        <div className="dc-card p-5 border-l-4 border-l-[#0E7C86]">
+          <div className="flex items-center justify-between text-sm font-semibold text-[#334155] mb-2">
+            <span>Patients en attente</span>
+            <Users className="w-5 h-5 text-[#0B4F9E]" />
           </div>
-          <div>
-            <p className="text-sm font-bold text-brand-slate">Taux de saturation</p>
-            <p className="text-2xl font-bold text-brand-navy">{saturation}%</p>
+          <div className="font-display font-bold text-3xl text-[#0B2A5B]">
+            {String(stats.patientsEnAttente).padStart(2, '0')}
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4">
-          <div className="p-3 bg-green-50 rounded-full text-green-600">
-            <BedDouble size={24} />
+        <div className="dc-card p-5 border-l-4 border-l-[#0E7C86]">
+          <div className="flex items-center justify-between text-sm font-semibold text-[#334155] mb-2">
+            <span>Box libres / Total</span>
+            <Building2 className="w-5 h-5 text-[#0B4F9E]" />
           </div>
-          <div>
-            <p className="text-sm font-bold text-brand-slate">Box libres</p>
-            <p className="text-2xl font-bold text-brand-navy">{litsLibres.length}</p>
+          <div className="font-display font-bold text-3xl text-[#0B2A5B]">
+            {stats.boxLibres} / {stats.capaciteTotale}
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4">
-          <div className="p-3 bg-slate-100 rounded-full text-slate-500">
-            <Wrench size={24} />
+        <div className="dc-card p-5 border-l-4 border-l-amber-600">
+          <div className="flex items-center justify-between text-sm font-semibold text-[#334155] mb-2">
+            <span>Attente moyenne</span>
+            <Clock className="w-5 h-5 text-[#0B4F9E]" />
           </div>
-          <div>
-            <p className="text-sm font-bold text-brand-slate">Nettoyage / Maintenance</p>
-            <p className="text-2xl font-bold text-brand-navy">
-              {enNettoyage.length} / {enMaintenance.length}
-            </p>
+          <div className="font-display font-bold text-3xl text-[#0B2A5B]">
+            {stats.attenteMoyenne} min
           </div>
         </div>
       </div>
 
-      {/* Gestion des Lits / Box — clic sur un box pour le gérer */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="font-bold text-lg text-brand-navy mb-1 flex items-center gap-2">
-          <BedDouble className="text-brand-slate" />
-          État des Box / Lits
-        </h2>
-        <p className="text-xs text-brand-slate mb-4">
-          Cliquez sur un box pour changer son état (libre → occupé → nettoyage) et y affecter un patient.
-        </p>
-
-        {loadingPatients || loadingLits ? (
-          <p className="text-center text-sm text-brand-slate py-6">Chargement des ressources…</p>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {lits.map((lit) => {
-              const conf = LIT_STATUTS[lit.statut] || LIT_STATUTS.libre;
-              const patient = lit.patientAffecte;
-              return (
-                <button
-                  key={lit._id}
-                  onClick={() => setModalLit(lit)}
-                  className={`border-2 rounded-lg p-4 text-center transition hover:scale-[1.03] hover:shadow-md cursor-pointer ${conf.classes}`}
-                >
-                  <h3 className="font-bold text-brand-navy text-sm">{lit.numeroBox}</h3>
-                  <p className="text-xs font-semibold mt-1 uppercase tracking-wide">{conf.label}</p>
-                  {patient ? (
-                    <div className="mt-2 text-xs text-brand-navy">
-                      <p className="truncate font-bold">
-                        {patient.nom} {patient.prenom}
-                      </p>
-                      {patient.dossierActif?.priorite && (
-                        <div className="mt-1.5 flex justify-center">
-                          <PriorityBadge level={patient.dossierActif.priorite} />
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-brand-slate mt-2 italic">—</p>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Patients actifs — vue synthétique pour l'affectation */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
-          <h2 className="font-bold text-brand-navy">Patients actifs ({patientsActifs.length})</h2>
+      <div className="dc-card overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#CBD5E1]">
+          <h2 className="dc-h2">
+            Occupation des salles et dossiers en cours ({String(passages.length).padStart(2, '0')})
+          </h2>
         </div>
-        {patientsActifs.length === 0 ? (
-          <p className="p-6 text-center text-sm text-brand-slate">Aucun patient actif.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-white text-xs uppercase text-brand-slate border-b">
-                  <th className="p-3">Patient</th>
-                  <th className="p-3">Statut</th>
-                  <th className="p-3">Priorité</th>
-                  <th className="p-3">Box</th>
+        <div className="w-full overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left border-collapse text-sm">
+            <thead>
+              <tr className="bg-[#EEF3F9] text-[#0B2A5B] text-sm font-bold">
+                <th className="py-3.5 px-4">Salle / Box</th>
+                <th className="py-3.5 px-4">Dossier</th>
+                <th className="py-3.5 px-4">Patient</th>
+                <th className="py-3.5 px-4">Priorité</th>
+                <th className="py-3.5 px-4">Durée d&apos;attente</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#CBD5E1]">
+              {passages.map((p) => (
+                <tr key={p.id} className="hover:bg-[#EEF3F9]/50">
+                  <td className="py-3.5 px-4 font-bold text-[#0B2A5B]">{p.box}</td>
+                  <td className="py-3.5 px-4 font-mono font-semibold text-[#0B4F9E]">
+                    {p.numero_dossier}
+                  </td>
+                  <td className="py-3.5 px-4 font-semibold text-[#0F172A]">
+                    {p.patient_prenom} {p.patient_nom}
+                  </td>
+                  <td className="py-3.5 px-4 font-bold text-[#0B2A5B]">{p.priorite}</td>
+                  <td className="py-3.5 px-4 font-medium text-[#334155]">{p.attente_min} min</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {patientsActifs.map((p) => (
-                  <tr key={p._id} className="hover:bg-brand-bg transition">
-                    <td className="p-3">
-                      <p className="font-bold text-brand-navy text-sm">
-                        {p.nom} {p.prenom}
-                      </p>
-                      <p className="text-xs text-brand-slate">{p.numeroDossier}</p>
-                    </td>
-                    <td className="p-3 text-xs font-semibold text-brand-navy">
-                      {STATUT_LABELS[p.statut]}
-                    </td>
-                    <td className="p-3">
-                      {p.dossierActif?.priorite ? (
-                        <PriorityBadge level={p.dossierActif.priorite} />
-                      ) : (
-                        <span className="text-xs text-brand-slate italic">Non trié</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-sm text-brand-navy">
-                      {p.litActuel?.numeroBox || <span className="text-brand-slate italic">Aucun</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-
-      {/* Fenêtre de gestion du box sélectionné */}
-      <LitModal
-        open={!!modalLit}
-        lit={modalLit}
-        patients={patients}
-        onClose={() => setModalLit(null)}
-        onSuccess={(message) => setModalLit(null) /* le temps réel rafraîchit les listes */}
-      />
     </div>
   );
 }
