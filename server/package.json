@@ -1,22 +1,26 @@
 {
   "name": "dossicom-server",
   "version": "1.0.0",
-  "description": "API Backend pour la gestion des urgences hospitalières Dossi'Com",
-  "main": "index.js",
+  "description": "Backend API Dossi'Com - Phase 2 (Métier) + Phase 3 (JWT/RBAC) + Phase 4 (Socket.io temps réel)",
+  "main": "src/app.js",
+  "type": "commonjs",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "seed": "node seed.js"
   },
-  "keywords": [],
-  "author": "Souma-11",
-  "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.0",
-    "pg": "^8.23.1"
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.0",
+    "pg": "^8.23.1",
+    "socket.io": "^4.8.4"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7"
+    "nodemon": "^3.1.3"
   }
 }
