@@ -1,11 +1,112 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Oswald:wght@700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
+@layer base {
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+    background-color: #EEF3F9;
+    color: #0F172A;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* Focus clavier haute visibilité (WCAG 2.4.7) */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid #0B4F9E;
+    outline-offset: 2px;
+  }
+}
+
+.font-display {
+  font-family: 'Oswald', 'Montserrat', sans-serif;
+}
+
+.dc-card {
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(11, 42, 91, 0.06);
+}
+
+.dc-h1 {
+  font-family: 'Oswald', 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  color: #0B2A5B;
+}
+
+@media (min-width: 640px) {
+  .dc-h1 {
+    font-size: 1.65rem;
+  }
+}
+
+.dc-h2 {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #0B2A5B;
+}
+
+.dc-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #0B2A5B;
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.dc-btn-primary:hover:not(:disabled) {
+  background-color: #0B4F9E;
+}
+
+.dc-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dc-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #FFFFFF;
+  color: #0B2A5B;
+  border: 1px solid #94A3B8;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.dc-btn-outline:hover {
   background-color: #EEF3F9;
-  font-family: 'Montserrat', sans-serif;
-  color: #5B6675;
+  border-color: #0B4F9E;
+}
+
+.no-scrollbar {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

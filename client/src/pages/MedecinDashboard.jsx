@@ -1,181 +1,400 @@
-import { useState } from 'react';
-import { Stethoscope, Eye, RefreshCw, Activity, ClipboardList } from 'lucide-react';
-import useApi from '../hooks/useApi';
-import ConsultationModal from '../components/patients/ConsultationModal';
-import PriorityBadge from '../components/ui/PriorityBadge';
+import { useState, useEffect } from 'react';
+import {
+  Stethoscope,
+  Clock,
+  CheckCircle2,
+  ClipboardList,
+  Activity,
+  FileText,
+  ArrowRightCircle,
+} from 'lucide-react';
 import api from '../services/api';
-import { trierFile, dureeDepuis, STATUT_LABELS } from '../utils/format';
+import { DEMO_PASSAGES, DEMO_HISTORIQUE } from '../data/demoData';
+import Toast from '../components/common/Toast';
 
-/**
- * Espace Médecin — Consultations (Phase 4).
- * - File d'attente médicale : patients triés par l'IAO (P1 → P4, puis ancienneté)
- * - Bouton "Consulter" → ConsultationModal (compte-rendu, prescriptions, clôture)
- * - Le médecin consulte la priorité SANS pouvoir la modifier (règle métier)
- * - Temps réel : un patient trié par l'Infirmier apparaît immédiatement ici
- */
+const PRIORITY_BADGES = {
+  P1: 'bg-[#C8102E] text-white',
+  P2: 'bg-orange-700 text-white',
+  P3: 'bg-amber-400 text-[#0B2A5B]',
+  P4: 'bg-[#0E7C86] text-white',
+};
+
 export default function MedecinDashboard() {
-  const { data, loading, error, refresh } = useApi('/patients', { pollMs: 15000 });
-  const [consultationId, setConsultationId] = useState(null); // patient en cours de consultation
-  const [flash, setFlash] = useState('');
-  const [demarrageEnCours, setDemarrageEnCours] = useState('');
+  const [passages, setPassages] = useState(DEMO_PASSAGES);
+  const [historique, setHistorique] = useState(DEMO_HISTORIQUE);
+  const [activeTab, setActiveTab] = useState('file');
+  const [selectedDossier, setSelectedDossier] = useState(DEMO_PASSAGES[0]);
+  const [diagnostic, setDiagnostic] = useState('');
+  const [examens, setExamens] = useState('');
+  const [orientation, setOrientation] = useState('Retour à domicile');
+  const [loading, setLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState('');
 
-  const patients = trierFile(
-    (data?.patients || []).filter((p) =>
-      ['en_attente_consultation', 'en_consultation'].includes(p.statut)
-    )
-  );
+  useEffect(() => {
+    let isMounted = true;
+    api
+      .get('/dossiers')
+      .then((res) => {
+        if (isMounted && Array.isArray(res.data) && res.data.length > 0) {
+          setPassages(res.data);
+          setSelectedDossier(res.data[0]);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
-  const afficherFlash = (message) => {
-    setFlash(message);
-    setTimeout(() => setFlash(''), 6000);
-  };
+  const handleCloturerPassage = (e) => {
+    e.preventDefault();
+    if (!selectedDossier) return;
 
-  /**
-   * "Consulter" démarre la prise en charge : PATCH sans clôture →
-   * le patient passe en "en_consultation" et le médecin est enregistré
-   * comme responsable. Puis la fenêtre de consultation s'ouvre.
-   */
-  const ouvrirConsultation = async (patient) => {
-    setDemarrageEnCours(patient._id);
-    try {
-      if (patient.statut === 'en_attente_consultation') {
-        await api.patch(`/patients/${patient._id}/consultation`, {});
-      }
-      setConsultationId(patient._id);
-    } catch (err) {
-      afficherFlash(
-        err.response?.data?.message || 'Erreur lors du démarrage de la consultation.'
-      );
-    } finally {
-      setDemarrageEnCours('');
-    }
+    const closedItem = {
+      ...selectedDossier,
+      orientation,
+      diagnostic,
+      heure_sortie: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    const remaining = passages.filter((p) => p.id !== selectedDossier.id);
+    setPassages(remaining);
+    setHistorique((prev) => [closedItem, ...prev]);
+    setSelectedDossier(remaining[0] || null);
+    setDiagnostic('');
+    setExamens('');
+    setActiveTab('file');
+    setToastMessage(`Dossier ${closedItem.numero_dossier} clôturé (${orientation}).`);
   };
 
   return (
-    <div className="space-y-6">
-      {/* En-tête */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-center justify-between">
-        <div>
-          <h1 className="font-title text-2xl text-brand-navy flex items-center gap-2">
-            <Stethoscope className="text-brand-turquoise" />
-            Espace Médecin — Consultations
-          </h1>
-          <p className="text-brand-slate text-sm mt-1">
-            Prise en charge médicale des patients triés — classés par priorité puis ancienneté.
-          </p>
-        </div>
-        <button
-          onClick={() => refresh()}
-          title="Rafraîchir"
-          className="p-2 rounded-lg border border-gray-200 hover:bg-brand-bg text-brand-slate hover:text-brand-navy transition"
-        >
-          <RefreshCw size={18} />
-        </button>
-      </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 min-h-[calc(100vh-8.5rem)] flex flex-col justify-between">
+      <div className="space-y-6">
+        <Toast message={toastMessage} onClose={() => setToastMessage('')} />
 
-      {flash && (
-        <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-lg">
-          {flash}
-        </div>
-      )}
+        {/* En-tête de l'espace Médecin */}
+        <div className="dc-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="dc-h1">Espace Médecin — Consultations et orientation</h1>
+            <p className="text-sm text-[#334155] mt-1">
+              Prise en charge clinique par priorité P1–P4, prescription d&apos;examens et clôture des
+              passages.
+            </p>
+          </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
-          {error}
+          <div className="px-4 py-2.5 rounded-[8px] bg-[#EEF3F9] border border-[#CBD5E1] text-right self-start md:self-auto">
+            <span className="text-sm font-semibold text-[#334155] block">Patients en attente</span>
+            <span className="font-display font-bold text-2xl text-[#0B2A5B]">
+              {String(passages.length).padStart(2, '0')}
+            </span>
+          </div>
         </div>
-      )}
 
-      {/* Grille des patients */}
-      {loading ? (
-        <p className="bg-white border border-gray-200 rounded-lg p-6 text-center text-sm text-brand-slate">
-          Chargement de la file médicale…
-        </p>
-      ) : patients.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-          <ClipboardList size={32} className="mx-auto text-brand-slate mb-2" />
-          <p className="text-sm text-brand-slate">
-            Aucun patient en attente de consultation. Les patients triés par l'infirmier IAO apparaîtront
-            ici automatiquement (temps réel).
-          </p>
+        {/* Barre d'onglets responsive sans débordement à 375 px */}
+        <div className="border-b border-[#CBD5E1] bg-white rounded-t-[10px] px-3 pt-2">
+          <div role="tablist" className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'file'}
+              onClick={() => setActiveTab('file')}
+              className={`px-3.5 py-2.5 text-sm font-semibold border-b-2 whitespace-nowrap shrink-0 transition-colors flex items-center gap-2 ${
+                activeTab === 'file'
+                  ? 'border-[#0B4F9E] text-[#0B4F9E] font-bold'
+                  : 'border-transparent text-[#334155] hover:text-[#0B2A5B]'
+              }`}
+            >
+              <ClipboardList className="w-4 h-4 shrink-0" />
+              File prioritaire ({String(passages.length).padStart(2, '0')})
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'consultation'}
+              onClick={() => setActiveTab('consultation')}
+              className={`px-3.5 py-2.5 text-sm font-semibold border-b-2 whitespace-nowrap shrink-0 transition-colors flex items-center gap-2 ${
+                activeTab === 'consultation'
+                  ? 'border-[#0B4F9E] text-[#0B4F9E] font-bold'
+                  : 'border-transparent text-[#334155] hover:text-[#0B2A5B]'
+              }`}
+            >
+              <Stethoscope className="w-4 h-4 shrink-0" />
+              Consultation en cours
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'historique'}
+              onClick={() => setActiveTab('historique')}
+              className={`px-3.5 py-2.5 text-sm font-semibold border-b-2 whitespace-nowrap shrink-0 transition-colors flex items-center gap-2 ${
+                activeTab === 'historique'
+                  ? 'border-[#0B4F9E] text-[#0B4F9E] font-bold'
+                  : 'border-transparent text-[#334155] hover:text-[#0B2A5B]'
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              Historique ({historique.length})
+            </button>
+          </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {patients.map((patient) => {
-            const cv = patient.dossierActif?.constantesVitales || {};
-            const enCours = patient.statut === 'en_consultation';
-            return (
-              <div
-                key={patient._id}
-                className={`bg-white rounded-lg shadow-sm border p-5 flex flex-col justify-between hover:shadow-md transition ${
-                  enCours ? 'border-brand-blue ring-1 ring-brand-blue' : 'border-gray-200'
-                }`}
-              >
-                {/* Informations du patient */}
-                <div>
-                  <div className="flex justify-between items-start mb-3 gap-2">
-                    <h3 className="font-bold text-lg text-brand-navy">
-                      {patient.nom} {patient.prenom}
-                    </h3>
-                    <PriorityBadge level={patient.dossierActif?.priorite} />
-                  </div>
-                  <p className="text-sm text-brand-slate mb-2">
-                    <span className="font-semibold">Motif :</span>{' '}
-                    {patient.dossierActif?.motifAdmission || '—'}
-                  </p>
-                  <p className="text-xs text-brand-darkTurquoise font-medium mb-2">
-                    {STATUT_LABELS[patient.statut]} · depuis{' '}
-                    {dureeDepuis(patient.dossierActif?.dateTriage || patient.dateArrivee)}
-                  </p>
-                  {/* Constantes vitales résumées (saisies par l'IAO) */}
-                  <div className="grid grid-cols-2 gap-1 text-xs text-brand-slate bg-brand-bg rounded-lg p-2">
-                    <span>Tension : <b className="text-brand-navy">{cv.tension || '—'}</b></span>
-                    <span>Temp. : <b className="text-brand-navy">{cv.temperature ?? '—'} °C</b></span>
-                    <span>FC : <b className="text-brand-navy">{cv.frequenceCardiaque ?? '—'} bpm</b></span>
-                    <span>SpO2 : <b className="text-brand-navy">{cv.spO2 ?? '—'} %</b></span>
-                    <span className="col-span-2">
-                      Douleur : <b className="text-brand-navy">{cv.douleur ?? '—'}/10</b>
+
+        {/* Onglet 1 : File prioritaire */}
+        {activeTab === 'file' && (
+          <div className="dc-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-[#CBD5E1] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h2 className="dc-h2">Patients classés par priorité clinique et ancienneté</h2>
+              <span className="text-sm font-semibold text-[#334155]">
+                {String(passages.length).padStart(2, '0')} dossiers actifs
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="p-6 space-y-3 animate-pulse">
+                {[1, 2, 3, 4].map((row) => (
+                  <div key={row} className="h-12 bg-slate-200 rounded w-full" />
+                ))}
+              </div>
+            ) : passages.length === 0 ? (
+              <div className="p-10 text-center space-y-2">
+                <CheckCircle2 className="w-8 h-8 text-[#0E7C86] mx-auto" />
+                <p className="font-bold text-base text-[#0B2A5B]">
+                  Aucun patient en attente de consultation
+                </p>
+                <p className="text-sm text-[#334155]">
+                  Tous les dossiers prioritaires ont été pris en charge.
+                </p>
+              </div>
+            ) : (
+              <div className="w-full overflow-x-auto">
+                <table className="w-full min-w-[740px] text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-[#EEF3F9] text-[#0B2A5B] text-sm font-bold">
+                      <th className="py-3.5 px-4">Dossier</th>
+                      <th className="py-3.5 px-4">Patient</th>
+                      <th className="py-3.5 px-4">Priorité</th>
+                      <th className="py-3.5 px-4">Motif</th>
+                      <th className="py-3.5 px-4">Affectation</th>
+                      <th className="py-3.5 px-4">Attente</th>
+                      <th className="py-3.5 px-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#CBD5E1]">
+                    {passages.map((p) => (
+                      <tr key={p.id} className="hover:bg-[#EEF3F9]/50">
+                        <td className="py-3.5 px-4 font-mono font-bold text-[#0B2A5B]">
+                          {p.numero_dossier}
+                        </td>
+                        <td className="py-3.5 px-4 font-semibold text-[#0F172A]">
+                          {p.patient_prenom} {p.patient_nom} ({p.age} ans)
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-sm font-bold ${
+                              PRIORITY_BADGES[p.priorite] || 'bg-slate-200 text-slate-900'
+                            }`}
+                          >
+                            {p.priorite}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-[#334155]">{p.motif_admission}</td>
+                        <td className="py-3.5 px-4 font-semibold text-[#0B2A5B]">{p.box}</td>
+                        <td className="py-3.5 px-4 font-medium text-[#334155]">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Clock className="w-4 h-4 text-[#0B4F9E]" />
+                            {p.attente_min} min
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedDossier(p);
+                              setActiveTab('consultation');
+                            }}
+                            className="dc-btn-primary py-1.5 px-3 text-sm"
+                          >
+                            Examiner
+                            <ArrowRightCircle className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Onglet 2 : Consultation en cours */}
+        {activeTab === 'consultation' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="dc-card p-6 space-y-4">
+              <h2 className="dc-h2 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-[#0E7C86]" />
+                Dossier sélectionné
+              </h2>
+              {selectedDossier ? (
+                <div className="space-y-4 text-sm">
+                  <div className="p-4 rounded-[8px] bg-[#EEF3F9] border border-[#CBD5E1]">
+                    <span className="font-mono text-sm text-[#0B4F9E] font-bold block">
+                      {selectedDossier.numero_dossier}
                     </span>
+                    <span className="font-bold text-base text-[#0B2A5B] block mt-0.5">
+                      {selectedDossier.patient_prenom} {selectedDossier.patient_nom} (
+                      {selectedDossier.age} ans)
+                    </span>
+                    <p className="text-sm text-[#334155] mt-1.5">
+                      {selectedDossier.motif_admission}
+                    </p>
                   </div>
+
+                  {selectedDossier.constantes && (
+                    <div className="grid grid-cols-2 gap-2.5 text-sm">
+                      <div className="p-3 rounded-[8px] border border-[#CBD5E1]">
+                        <span className="text-[#334155] block">Tension</span>
+                        <strong className="text-[#0B2A5B] text-base">
+                          {selectedDossier.constantes.ta}
+                        </strong>
+                      </div>
+                      <div className="p-3 rounded-[8px] border border-[#CBD5E1]">
+                        <span className="text-[#334155] block">Fréq. cardiaque</span>
+                        <strong className="text-[#0B2A5B] text-base">
+                          {selectedDossier.constantes.fc}
+                        </strong>
+                      </div>
+                      <div className="p-3 rounded-[8px] border border-[#CBD5E1]">
+                        <span className="text-[#334155] block">SpO₂</span>
+                        <strong className="text-[#0B2A5B] text-base">
+                          {selectedDossier.constantes.spo2}
+                        </strong>
+                      </div>
+                      <div className="p-3 rounded-[8px] border border-[#CBD5E1]">
+                        <span className="text-[#334155] block">Température</span>
+                        <strong className="text-[#0B2A5B] text-base">
+                          {selectedDossier.constantes.temp}
+                        </strong>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-[#334155]">Aucun dossier sélectionné.</p>
+              )}
+            </div>
+
+            <form onSubmit={handleCloturerPassage} className="lg:col-span-2 dc-card p-6 space-y-4">
+              <h2 className="dc-h2 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#0B4F9E]" />
+                Compte-rendu et orientation
+              </h2>
+
+              <div>
+                <label className="block text-sm font-bold text-[#0B2A5B] mb-1.5">
+                  Observations cliniques et diagnostic *
+                </label>
+                <textarea
+                  rows="4"
+                  required
+                  value={diagnostic}
+                  onChange={(e) => setDiagnostic(e.target.value)}
+                  placeholder="Saisir l'examen clinique, le diagnostic retenu et les consignes..."
+                  className="w-full border border-[#94A3B8] rounded-[8px] p-3 text-sm text-[#0F172A] placeholder-[#475569] focus:border-[#0B4F9E]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-[#0B2A5B] mb-1.5">
+                    Examens complémentaires
+                  </label>
+                  <input
+                    type="text"
+                    value={examens}
+                    onChange={(e) => setExamens(e.target.value)}
+                    placeholder="Ex. ECG, Bilan sanguin, Radio..."
+                    className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-[#475569] focus:border-[#0B4F9E]"
+                  />
                 </div>
 
-                {/* Boutons d'action */}
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                  <button
-                    onClick={() => ouvrirConsultation(patient)}
-                    disabled={demarrageEnCours === patient._id}
-                    className="flex-1 flex items-center justify-center gap-1 bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold py-2 rounded transition disabled:opacity-60"
+                <div>
+                  <label className="block text-sm font-bold text-[#0B2A5B] mb-1.5">
+                    Décision d&apos;orientation
+                  </label>
+                  <select
+                    value={orientation}
+                    onChange={(e) => setOrientation(e.target.value)}
+                    className="w-full border border-[#94A3B8] rounded-[8px] px-3.5 py-2.5 text-sm font-semibold text-[#0F172A] bg-white focus:border-[#0B4F9E]"
                   >
-                    <Activity size={14} />
-                    {demarrageEnCours === patient._id
-                      ? 'Ouverture…'
-                      : enCours
-                        ? 'Poursuivre la consultation'
-                        : 'Consulter'}
-                  </button>
-                  <button
-                    onClick={() => setConsultationId(patient._id)}
-                    title="Voir le dossier"
-                    className="flex items-center justify-center gap-1 bg-brand-bg hover:bg-gray-200 text-brand-navy text-xs font-bold py-2 px-3 rounded transition border border-gray-300"
-                  >
-                    <Eye size={16} />
-                  </button>
+                    <option value="Retour à domicile">Retour à domicile</option>
+                    <option value="Hospitalisation en service">Hospitalisation en service</option>
+                    <option value="Surveillance UHCD">Surveillance UHCD</option>
+                    <option value="Transfert spécialisé">Transfert spécialisé</option>
+                  </select>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
 
-      {/* Fenêtre de consultation */}
-      <ConsultationModal
-        open={!!consultationId}
-        patientId={consultationId}
-        onClose={() => setConsultationId(null)}
-        onSuccess={(message) => {
-          afficherFlash(message);
-          refresh(true);
-        }}
-      />
+              <div className="pt-2 flex justify-end">
+                <button type="submit" disabled={!selectedDossier} className="dc-btn-primary">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Valider et clôturer le passage
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Onglet 3 : Historique */}
+        {activeTab === 'historique' && (
+          <div className="dc-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-[#CBD5E1]">
+              <h2 className="dc-h2">Passages clôturés du jour</h2>
+            </div>
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left border-collapse text-sm">
+                <thead>
+                  <tr className="bg-[#EEF3F9] text-[#0B2A5B] text-sm font-bold">
+                    <th className="py-3.5 px-4">Dossier</th>
+                    <th className="py-3.5 px-4">Patient</th>
+                    <th className="py-3.5 px-4">Motif</th>
+                    <th className="py-3.5 px-4">Orientation</th>
+                    <th className="py-3.5 px-4">Sortie</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#CBD5E1]">
+                  {historique.map((h) => (
+                    <tr key={h.id}>
+                      <td className="py-3.5 px-4 font-mono font-bold text-[#0B2A5B]">
+                        {h.numero_dossier}
+                      </td>
+                      <td className="py-3.5 px-4 font-semibold text-[#0F172A]">
+                        {h.patient_prenom} {h.patient_nom}
+                      </td>
+                      <td className="py-3.5 px-4 text-[#334155]">{h.motif_admission}</td>
+                      <td className="py-3.5 px-4 font-semibold text-[#0B5E66]">{h.orientation}</td>
+                      <td className="py-3.5 px-4 text-[#334155]">{h.heure_sortie}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bandeau de garde médicale */}
+      <div className="dc-card p-4 bg-[#EEF3F9]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm text-[#334155]">
+        <span>
+          <strong className="text-[#0B2A5B]">Équipe médicale de garde :</strong> 4 praticiens actifs
+          • Liaison laboratoire et imagerie opérationnelle.
+        </span>
+        <span className="font-semibold text-[#0B4F9E]">Protocole Urgences Dossi&apos;Com</span>
+      </div>
     </div>
   );
 }

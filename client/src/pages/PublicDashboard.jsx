@@ -1,119 +1,186 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Activity, Clock, BedDouble, Phone } from 'lucide-react';
-import useApi from '../hooks/useApi';
+import { Activity, Stethoscope, Users, Clock, PhoneCall, ArrowRight } from 'lucide-react';
+import api from '../services/api';
+import { DEMO_STATS } from '../data/demoData';
 
-/**
- * Tableau de bord public — page d'entrée publique (Phase 4).
- * Situation du service en temps réel, SANS aucune donnée nominative.
- * Indicateurs fournis par GET /api/stats/public (public, agrégé, anonyme).
- */
+const SPACES = [
+  {
+    role: 'accueil',
+    title: 'Accueil',
+    desc: 'Enregistrement et ouverture des passages',
+  },
+  {
+    role: 'infirmier',
+    title: 'Infirmier',
+    desc: 'Triage P1–P4 et suivi des alertes',
+  },
+  {
+    role: 'medecin',
+    title: 'Médecin',
+    desc: 'Consultations, examens et orientation',
+  },
+  {
+    role: 'responsable',
+    title: 'Responsable',
+    desc: 'Supervision, salles et personnel',
+  },
+  {
+    role: 'patient',
+    title: 'Patient',
+    desc: 'Suivi de mon passage en temps réel',
+  },
+];
+
 export default function PublicDashboard() {
-  const { data, loading, error } = useApi('/stats/public', { pollMs: 15000 });
-  const stats = data?.stats;
+  const [stats, setStats] = useState(DEMO_STATS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    api
+      .get('/public/stats')
+      .then((res) => {
+        if (isMounted && res.data && Number(res.data.patientsEnAttente) > 0) {
+          setStats((prev) => ({ ...prev, ...res.data }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
-    <div className="space-y-6">
-      {/* En-tête de la page */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h1 className="font-title text-3xl text-brand-navy">
-          Service des urgences — Situation en temps réel
-        </h1>
-        <p className="text-brand-slate text-sm mt-1">
-          Données globales agrégées du service hospitalier, mises à jour automatiquement.
-        </p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 min-h-[calc(100vh-8.5rem)]">
+      {/* Bandeau principal */}
+      <div className="dc-card p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+        <img
+          src="/dossicom-icone-512_2.png"
+          alt="Dossi'Com"
+          height="52"
+          className="h-[52px] w-[52px] object-contain shrink-0"
+        />
+        <div>
+          <h1 className="dc-h1">Service des urgences — Situation en temps réel</h1>
+          <p className="text-sm text-[#334155] mt-1">
+            Données globales agrégées du service hospitalier, sans aucune donnée nominative.
+          </p>
+        </div>
       </div>
 
-      {/* Urgence vitale */}
-      <div className="bg-red-50 border-2 border-priority-p1 text-red-800 p-4 rounded-lg flex items-center gap-3">
-        <Phone size={22} className="shrink-0" />
-        <p className="text-sm font-semibold">
-          Urgence vitale ? N'attendez pas : appelez le <b>190</b> ou présentez-vous immédiatement à
-          l'accueil des urgences.
-        </p>
+      {/* Alerte urgence vitale */}
+      <div
+        role="alert"
+        className="p-4 rounded-[10px] bg-red-50 border-2 border-[#C8102E] text-[#991B1B] text-sm font-semibold flex items-start sm:items-center gap-3"
+      >
+        <PhoneCall className="w-5 h-5 text-[#C8102E] shrink-0 mt-0.5 sm:mt-0" />
+        <span>
+          Urgence vitale ? N&apos;attendez pas : appelez le{' '}
+          <strong className="underline text-[#C8102E]">190</strong> ou présentez-vous immédiatement à
+          l&apos;accueil des urgences.
+        </span>
       </div>
 
-      {/* 4 Indicateurs clés (temps réel) */}
-      {error ? (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
-          Indicateurs momentanément indisponibles ({error})
+      {/* 4 cartes indicateurs avec Skeleton de chargement */}
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((item) => (
+            <div key={item} className="dc-card p-5 animate-pulse space-y-3">
+              <div className="h-4 bg-slate-200 rounded w-2/3" />
+              <div className="h-8 bg-slate-200 rounded w-1/3" />
+            </div>
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-brand-blue">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold text-brand-slate">Saturation</span>
-              <Activity className="text-brand-blue" size={24} />
+          <div className="dc-card p-5 border-l-4 border-l-[#0B4F9E]">
+            <div className="flex items-center justify-between text-sm font-semibold text-[#334155] mb-2">
+              <span>Saturation du service</span>
+              <Activity className="w-5 h-5 text-[#0B4F9E]" />
             </div>
-            <p className="text-2xl font-bold text-brand-navy mt-2">
-              {loading ? '…' : `${stats?.saturation ?? 0}%`}
-            </p>
+            <div className="font-display font-bold text-3xl text-[#0B2A5B]">
+              {stats.saturation}%
+            </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-brand-turquoise">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold text-brand-slate">Box libres</span>
-              <BedDouble className="text-brand-turquoise" size={24} />
+          <div className="dc-card p-5 border-l-4 border-l-[#0E7C86]">
+            <div className="flex items-center justify-between text-sm font-semibold text-[#334155] mb-2">
+              <span>Box libres / Médecins</span>
+              <Stethoscope className="w-5 h-5 text-[#0B4F9E]" />
             </div>
-            <p className="text-2xl font-bold text-brand-navy mt-2">
-              {loading ? '…' : `${stats?.boxLibres ?? 0} / ${stats?.boxTotal ?? 0}`}
-            </p>
+            <div className="font-display font-bold text-3xl text-[#0B2A5B]">
+              {stats.boxLibres} / {stats.medecinsActifs}
+            </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-brand-slate">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold text-brand-slate">Patients en attente</span>
-              <Users className="text-brand-slate" size={24} />
+          <div className="dc-card p-5 border-l-4 border-l-[#0E7C86]">
+            <div className="flex items-center justify-between text-sm font-semibold text-[#334155] mb-2">
+              <span>Patients en attente</span>
+              <Users className="w-5 h-5 text-[#0B4F9E]" />
             </div>
-            <p className="text-2xl font-bold text-brand-navy mt-2">
-              {loading ? '…' : stats?.patientsEnAttente ?? 0}
-            </p>
+            <div className="font-display font-bold text-3xl text-[#0B2A5B]">
+              {String(stats.patientsEnAttente).padStart(2, '0')}
+            </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-brand-darkTurquoise">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold text-brand-slate">Attente moyenne</span>
-              <Clock className="text-brand-darkTurquoise" size={24} />
+          <div className="dc-card p-5 border-l-4 border-l-amber-600">
+            <div className="flex items-center justify-between text-sm font-semibold text-[#334155] mb-2">
+              <span>Attente moyenne</span>
+              <Clock className="w-5 h-5 text-[#0B4F9E]" />
             </div>
-            <p className="text-2xl font-bold text-brand-navy mt-2">
-              {loading ? '…' : `${stats?.attenteMoyenne ?? 0} min`}
-            </p>
+            <div className="font-display font-bold text-3xl text-[#0B2A5B]">
+              {stats.attenteMoyenne} min
+            </div>
           </div>
         </div>
       )}
 
-      {/* Parcours type aux urgences */}
-      <div className="bg-brand-bg p-5 rounded-lg border border-gray-200">
-        <h2 className="font-bold text-brand-navy mb-2">Votre parcours aux urgences</h2>
-        <p className="text-sm text-brand-slate">
-          1. Accueil et enregistrement du dossier → 2. Triage par l'infirmier (niveau de priorité
-          P1 à P4) → 3. Attente classée par priorité → 4. Consultation médicale → 5. Orientation
-          (retour à domicile, hospitalisation ou transfert).
-        </p>
+      {/* Parcours patient */}
+      <div className="dc-card p-6">
+        <h2 className="dc-h2 mb-4">Votre parcours aux urgences</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm font-semibold text-[#0B2A5B]">
+          <div className="p-4 rounded-[8px] bg-[#EEF3F9] border border-[#CBD5E1]">
+            1. Accueil et enregistrement du dossier
+          </div>
+          <div className="p-4 rounded-[8px] bg-[#EEF3F9] border border-[#CBD5E1]">
+            2. Triage par l&apos;infirmier (priorité P1 à P4)
+          </div>
+          <div className="p-4 rounded-[8px] bg-[#EEF3F9] border border-[#CBD5E1]">
+            3. Attente classée par priorité clinique
+          </div>
+          <div className="p-4 rounded-[8px] bg-[#EEF3F9] border border-[#CBD5E1]">
+            4. Consultation médicale et examens
+          </div>
+          <div className="p-4 rounded-[8px] bg-[#EEF3F9] border border-[#CBD5E1]">
+            5. Orientation (retour, hospitalisation, transfert)
+          </div>
+        </div>
       </div>
 
-      {/* Cartes d'accès Extranet par rôle */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="font-semibold text-xl text-brand-navy mb-4">Accès aux espaces</h2>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {['Accueil', 'Infirmier', 'Médecin', 'Responsable', 'Patient'].map((role) => (
+      {/* Accès aux 5 espaces */}
+      <div className="dc-card p-6">
+        <h2 className="dc-h2 mb-4">Accès aux espaces</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {SPACES.map((space) => (
             <div
-              key={role}
-              className="border p-4 rounded-lg text-center bg-brand-bg flex flex-col justify-between"
+              key={space.role}
+              className="border border-[#CBD5E1] rounded-[10px] p-4 flex flex-col justify-between text-center bg-white"
             >
-              <h3 className="font-bold text-brand-navy mb-2">{role}</h3>
-              <Link
-                to="/login"
-                className="mt-2 w-full bg-brand-blue hover:bg-brand-navy text-white text-xs py-2 rounded font-semibold transition inline-block"
-              >
+              <div>
+                <h3 className="font-bold text-base text-[#0B2A5B]">{space.title}</h3>
+                <p className="text-sm text-[#334155] mt-1.5 mb-4">{space.desc}</p>
+              </div>
+              <Link to={`/login?role=${space.role}`} className="dc-btn-primary w-full text-sm">
                 Se connecter
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           ))}
         </div>
-        <p className="text-xs text-brand-slate mt-4 text-center">
-          Seul le compte patient peut être créé en ligne — les comptes du personnel sont créés par le
-          responsable du service.
-        </p>
       </div>
     </div>
   );
