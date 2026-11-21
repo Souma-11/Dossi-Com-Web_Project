@@ -1,59 +1,60 @@
-import axios from 'axios';
+import { INITIAL_DB } from '../data/mockData';
 
-/**
- * Instance Axios centralisée pour toutes les requêtes vers le backend Dossi'Com.
- * Injecte automatiquement le JWT depuis localStorage dans chaque requête.
- *
- * L'URL du backend est configurable via la variable d'environnement
- * VITE_API_URL (fichier client/.env). Par défaut : http://localhost:5000/api
- */
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const USE_MOCK = false;
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+const DB_STORAGE_KEY = 'dossicom_db_v1';
 
-// ─── Intercepteur de requête : injecte le token JWT ───────────────────────
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('dossicom_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+export function getLocalDB() {
+  try {
+    const raw = localStorage.getItem(DB_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(INITIAL_DB));
+      return structuredClone(INITIAL_DB);
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// ─── Intercepteur de réponse : gère l'expiration du token ─────────────────
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const isPublicPage =
-      window.location.pathname === '/login' || window.location.pathname === '/register';
-
-    if (error.response?.status === 401 && !isPublicPage) {
-      // Token expiré ou invalide : on nettoie le localStorage et on renvoie au login
-      localStorage.removeItem('dossicom_token');
-      localStorage.removeItem('dossicom_user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
+    return JSON.parse(raw);
+  } catch {
+    return structuredClone(INITIAL_DB);
   }
-);
-
-/**
- * Transforme une erreur Axios en message lisible pour l'utilisateur.
- */
-export function translateError(error, fallback = 'Une erreur est survenue.') {
-  if (!error.response) {
-    const apiUrl = API_URL.replace('/api', '');
-    return `Impossible de joindre le serveur backend (${apiUrl}). Démarrez-le avec : cd server → npm run dev (et vérifiez que MongoDB est démarré).`;
-  }
-  return error.response?.data?.message || fallback;
 }
 
-export default api;
+export function saveLocalDB(nextDb) {
+  localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(nextDb));
+  window.dispatchEvent(new Event('dossicom:db-updated'));
+}
+
+export function resetLocalDB() {
+  localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(INITIAL_DB));
+  window.dispatchEvent(new Event('dossicom:db-updated'));
+  return structuredClone(INITIAL_DB);
+}
+
+export async function apiRequest(endpoint, options = {}) {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers,
+  };
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.message || `Erreur serveur (${response.status})`);
+  }
+
+  return response.json();
+}
+
+export default {
+  USE_MOCK,
+  API_BASE_URL,
+  getLocalDB,
+  saveLocalDB,
+  resetLocalDB,
+  apiRequest,
+};

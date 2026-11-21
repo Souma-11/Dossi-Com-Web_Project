@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Bed, AlertTriangle, CheckCircle2, UserRound } from 'lucide-react';
 import Modal from '../common/Modal';
 import PriorityBadge from '../ui/PriorityBadge';
@@ -10,19 +10,17 @@ import { LIT_STATUTS, STATUT_LABELS } from '../../utils/format';
  * Espace Responsable : clic sur un box → changement d'état
  * (libre → occupé → nettoyage) + affectation d'un patient.
  */
-export default function LitModal({ open, lit, patients, onClose, onSuccess }) {
-  const [statut, setStatut] = useState('libre');
-  const [patientId, setPatientId] = useState('');
+export default function LitModal(props) {
+  const { open, lit } = props;
+  const resetKey = `${open}-${lit?._id || lit?.id || 'empty'}`;
+  return <LitModalInner key={resetKey} {...props} />;
+}
+
+function LitModalInner({ open, lit, patients, onClose, onSuccess }) {
+  const [statut, setStatut] = useState(lit?.statut || 'libre');
+  const [patientId, setPatientId] = useState(lit?.patientAffecte?._id || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-
-  // Réinitialisation à chaque ouverture
-  useEffect(() => {
-    if (!open) return;
-    setError('');
-    setStatut(lit?.statut || 'libre');
-    setPatientId(lit?.patientAffecte?._id || '');
-  }, [open, lit]);
 
   // Patients affectables : actifs (non sortis) et sans box (ou déjà dans CE box)
   const affectables = (patients || []).filter(

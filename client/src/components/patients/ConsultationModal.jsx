@@ -14,16 +14,22 @@ import Modal from '../common/Modal';
 import PriorityBadge from '../ui/PriorityBadge';
 import { translateError } from '../../services/api';
 import api from '../../services/api';
-import { ORIENTATIONS, dureeDepuis } from '../../utils/format';
+import { ORIENTATIONS } from '../../utils/format';
 
 /**
  * ConsultationModal — Fenêtre "Consulter" du Médecin (Phase 4).
  * Rédaction du compte-rendu, prescriptions d'examens, diagnostic et
  * clôture du passage (orientation finale + libération automatique du box).
  */
-export default function ConsultationModal({ open, patientId, onClose, onSuccess }) {
+export default function ConsultationModal(props) {
+  const { open, patientId } = props;
+  const resetKey = `${open}-${patientId || 'empty'}`;
+  return <ConsultationModalInner key={resetKey} {...props} />;
+}
+
+function ConsultationModalInner({ open, patientId, onClose, onSuccess }) {
   const [patient, setPatient] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(open && patientId));
   const [diagnostic, setDiagnostic] = useState('');
   const [compteRendu, setCompteRendu] = useState('');
   const [prescriptions, setPrescriptions] = useState([]);
@@ -36,8 +42,7 @@ export default function ConsultationModal({ open, patientId, onClose, onSuccess 
   useEffect(() => {
     if (!open || !patientId) return;
     let cancelled = false;
-    setLoading(true);
-    setError('');
+
     api
       .get(`/patients/${patientId}`)
       .then(({ data }) => {
@@ -49,8 +54,15 @@ export default function ConsultationModal({ open, patientId, onClose, onSuccess 
         setPrescriptions(d?.prescriptions || []);
         setOrientation(d?.orientationSortie || 'en_cours');
       })
-      .catch((err) => !cancelled && setError(translateError(err, 'Impossible de charger le dossier.')))
-      .finally(() => !cancelled && setLoading(false));
+      .catch((err) => {
+        if (!cancelled) {
+          setError(translateError(err, 'Impossible de charger le dossier.'));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
     return () => {
       cancelled = true;
     };
@@ -81,7 +93,7 @@ export default function ConsultationModal({ open, patientId, onClose, onSuccess 
       onSuccess?.(`Consultation de ${patient?.prenom} ${patient?.nom} enregistrée (en cours).`);
       onClose();
     } catch (err) {
-      setError(translateError(err, 'Erreur lors de l\'enregistrement.'));
+      setError(translateError(err, "Erreur lors de l'enregistrement."));
     } finally {
       setSaving(false);
     }
@@ -95,7 +107,9 @@ export default function ConsultationModal({ open, patientId, onClose, onSuccess 
       return;
     }
     if (orientation === 'en_cours') {
-      setError('Choisissez une décision d\'orientation finale (domicile, hospitalisation, mutation) pour clôturer.');
+      setError(
+        "Choisissez une décision d'orientation finale (domicile, hospitalisation, mutation) pour clôturer."
+      );
       return;
     }
     setSaving(true);
@@ -129,7 +143,11 @@ export default function ConsultationModal({ open, patientId, onClose, onSuccess 
       onClose={onClose}
       size="lg"
       title={`Consultation — ${patient ? `${patient.prenom} ${patient.nom}` : 'chargement…'}`}
-      subtitle={patient ? `Dossier ${patient.numeroDossier} · ${patient.age} ans · ${dossier?.motifAdmission || ''}` : ''}
+      subtitle={
+        patient
+          ? `Dossier ${patient.numeroDossier} · ${patient.age} ans · ${dossier?.motifAdmission || ''}`
+          : ''
+      }
       footer={
         <div className="flex flex-col sm:flex-row gap-2 justify-end">
           <button
@@ -160,7 +178,11 @@ export default function ConsultationModal({ open, patientId, onClose, onSuccess 
         </div>
       }
     >
-      {loading && <p className="text-sm text-brand-slate py-6 text-center">Chargement du dossier médical…</p>}
+      {loading && (
+        <p className="text-sm text-brand-slate py-6 text-center">
+          Chargement du dossier médical…
+        </p>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">
@@ -199,14 +221,17 @@ export default function ConsultationModal({ open, patientId, onClose, onSuccess 
                 Glycémie : <b className="text-brand-navy">{cv.glycemie ?? '—'} g/L</b>
               </span>
               <span className="text-brand-slate col-span-2">
-                Observation : <b className="text-brand-navy">{dossier?.observationsTriage || '—'}</b>
+                Observation :{' '}
+                <b className="text-brand-navy">{dossier?.observationsTriage || '—'}</b>
               </span>
             </div>
           </div>
 
           {/* Diagnostic */}
           <div>
-            <label className="block text-sm font-bold text-brand-navy mb-1">Diagnostic médical *</label>
+            <label className="block text-sm font-bold text-brand-navy mb-1">
+              Diagnostic médical *
+            </label>
             <textarea
               value={diagnostic}
               onChange={(e) => setDiagnostic(e.target.value)}
@@ -292,8 +317,8 @@ export default function ConsultationModal({ open, patientId, onClose, onSuccess 
               <option value="mutation">Mutation vers un autre établissement</option>
             </select>
             <p className="text-xs text-brand-slate mt-1.5">
-              La clôture libère automatiquement le box (passage en nettoyage) et clôt le dossier : le patient
-              n'est plus réaffectable.
+              La clôture libère automatiquement le box (passage en nettoyage) et clôt le dossier :
+              le patient n'est plus réaffectable.
             </p>
           </div>
         </div>

@@ -11,7 +11,7 @@ import { useSocketEvent } from '../context/SocketContext';
  * - Rafraîchissement de secours toutes les 15 s (recommandé par la charte
  *   technique du projet en cas de coupure WebSocket)
  *
- * @param {string} path          Route API relative (ex: '/patients')
+ * @param {string} path            Route API relative (ex: '/patients')
  * @param {object} options
  * @param {number} options.pollMs  Intervalle de polling de secours (0 = désactivé)
  * @returns {data, loading, error, refresh}
@@ -20,8 +20,49 @@ export default function useApi(path, { pollMs = 15000 } = {}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [prevPath, setPrevPath] = useState(path);
   const mountedRef = useRef(true);
 
+  // Réinitialise l'état de chargement proprement si la route (path) change
+  if (prevPath !== path) {
+    setPrevPath(path);
+    setLoading(true);
+  }
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Chargement initial / rechargement asynchrone si la route change
+  useEffect(() => {
+    let cancelled = false;
+
+    api
+      .get(path)
+      .then((response) => {
+        if (!cancelled) {
+          setData(response.data);
+          setError('');
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(translateError(err, 'Erreur lors du chargement des données.'));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+
+  // Rafraîchissement manuel, temps réel ou polling
   const refresh = useCallback(
     async (silent = false) => {
       if (!silent) setLoading(true);
@@ -41,15 +82,6 @@ export default function useApi(path, { pollMs = 15000 } = {}) {
     },
     [path]
   );
-
-  // Chargement initial / re-chargement si la route change
-  useEffect(() => {
-    mountedRef.current = true;
-    refresh();
-    return () => {
-      mountedRef.current = false;
-    };
-  }, [refresh]);
 
   // ─── Temps réel : les 4 événements Socket.io du serveur ──────────────────
   useSocketEvent('patients:update', () => refresh(true));

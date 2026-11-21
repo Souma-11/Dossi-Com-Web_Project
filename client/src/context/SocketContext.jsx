@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useCallback } from 'react';
+import { createContext, useContext, useEffect, useRef, useCallback, useState } from 'react';
 import { io } from 'socket.io-client';
 
 /**
@@ -34,45 +34,51 @@ const getSocket = () => {
 };
 
 export function SocketProvider({ children }) {
-  const socketRef = useRef(null);
-  if (!socketRef.current) {
-    socketRef.current = getSocket();
-  }
+  const [socket] = useState(() => getSocket());
 
   // Indicateur de connexion exposé aux composants (bandeau "hors ligne")
-  // via un simple compteur d'état global léger
   useEffect(() => {
-    const socket = socketRef.current;
-    socket.on('connect', () => {
+    const handleConnect = () => {
       window.__DOSSICOM_SOCKET_CONNECTED = true;
-    });
-    socket.on('disconnect', () => {
+    };
+    const handleDisconnect = () => {
       window.__DOSSICOM_SOCKET_CONNECTED = false;
-    });
-  }, []);
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+    };
+  }, [socket]);
 
   /**
    * S'abonner à un événement temps réel.
    * Retourne la fonction de désabonnement (compatible useEffect).
    */
-  const subscribe = useCallback((event, handler) => {
-    const socket = socketRef.current;
-    if (!socket) return () => {};
-    socket.on(event, handler);
-    return () => socket.off(event, handler);
-  }, []);
+  const subscribe = useCallback(
+    (event, handler) => {
+      if (!socket) return () => {};
+      socket.on(event, handler);
+      return () => socket.off(event, handler);
+    },
+    [socket]
+  );
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, subscribe, url: SOCKET_URL }}>
+    <SocketContext.Provider value={{ socket, subscribe, url: SOCKET_URL }}>
       {children}
     </SocketContext.Provider>
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSocket() {
   const context = useContext(SocketContext);
   if (!context) {
-    throw new Error('useSocket doit être utilisé à l\'intérieur d\'un SocketProvider');
+    throw new Error("useSocket doit être utilisé à l'intérieur d'un SocketProvider");
   }
   return context;
 }
@@ -81,10 +87,14 @@ export function useSocket() {
  * Hook : exécute handler à chaque émission de l'événement temps réel.
  * Le handler est mémorisé pour éviter les désabonnements en cascade.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSocketEvent(event, handler) {
   const { subscribe } = useSocket();
   const savedHandler = useRef(handler);
-  savedHandler.current = handler;
+
+  useEffect(() => {
+    savedHandler.current = handler;
+  }, [handler]);
 
   useEffect(() => {
     const unsubscribe = subscribe(event, (...args) => savedHandler.current(...args));

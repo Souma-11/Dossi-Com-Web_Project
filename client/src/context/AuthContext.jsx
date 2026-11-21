@@ -1,11 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState } from 'react';
-import api from '../services/api';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { authService } from '../services/authService';
 
 const AuthContext = createContext(null);
 
-function normalizeUser(data) {
-  const rawUser = data?.user || data;
+function normalizeUser(rawUser) {
   if (!rawUser || typeof rawUser !== 'object') return null;
 
   const role = rawUser.role ? String(rawUser.role).trim().toLowerCase() : '';
@@ -16,40 +15,49 @@ function normalizeUser(data) {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('user');
-      return saved ? normalizeUser(JSON.parse(saved)) : null;
-    } catch {
-      localStorage.removeItem('user');
-      return null;
-    }
-  });
+  const [user, setUser] = useState(() =>
+    normalizeUser(authService.getCurrentUser())
+  );
 
-  const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    const token = res.data?.token || res.data?.accessToken;
-    const normalizedUser = normalizeUser(res.data);
+  useEffect(() => {
+    const syncAuth = () => {
+      setUser(normalizeUser(authService.getCurrentUser()));
+    };
 
-    if (token) {
-      localStorage.setItem('token', token);
-    }
-    if (normalizedUser) {
-      localStorage.setItem('user', JSON.stringify(normalizedUser));
-    }
+    window.addEventListener('dossicom:auth-updated', syncAuth);
+    window.addEventListener('storage', syncAuth);
+    return () => {
+      window.removeEventListener('dossicom:auth-updated', syncAuth);
+      window.removeEventListener('storage', syncAuth);
+    };
+  }, []);
 
+  const login = async (credentialsOrEmail, maybePassword) => {
+    const payload =
+      typeof credentialsOrEmail === 'object'
+        ? credentialsOrEmail
+        : { identifiant: credentialsOrEmail, password: maybePassword };
+
+    const rawUser = await authService.login(payload);
+    const normalizedUser = normalizeUser(rawUser);
+    setUser(normalizedUser);
+    return normalizedUser;
+  };
+
+  const registerPatient = async (formData) => {
+    const rawUser = await authService.registerPatient(formData);
+    const normalizedUser = normalizeUser(rawUser);
     setUser(normalizedUser);
     return normalizedUser;
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    authService.logout();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, registerPatient, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,112 +1,304 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-title: 'Oswald', sans-serif;
+  --font-body: 'Montserrat', sans-serif;
+
+  --color-navy: #0B2A5B;
+  --color-royal: #0B4F9E;
+  --color-teal: #0E7C86;
+  --color-turquoise: #1FAFB5;
+  --color-bg: #EEF3F9;
+  --color-border: #D5DEEA;
+  --color-muted: #5B6675;
+  --color-danger: #C8102E;
+  --color-warning: #B85C00;
+  --color-success: #1B7F4B;
+}
+
 @layer base {
   html {
-    font-size: 16px;
+    font-family: var(--font-body);
+    background-color: var(--color-bg);
+    color: #0f172a;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
   }
 
   body {
-    font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
-    background-color: #EEF3F9;
-    color: #0F172A;
-    font-size: 0.9375rem;
-    line-height: 1.5;
-    overflow-x: hidden;
+    min-height: 100vh;
+    background-color: var(--color-bg);
+    margin: 0;
   }
 
-  /* Focus clavier haute visibilité (WCAG 2.4.7) */
-  a:focus-visible,
-  button:focus-visible,
-  input:focus-visible,
-  select:focus-visible,
-  textarea:focus-visible {
-    outline: 3px solid #0B4F9E;
-    outline-offset: 2px;
+  h1, h2, h3 {
+    font-family: var(--font-title);
+    color: var(--color-navy);
+    letter-spacing: -0.01em;
+  }
+
+  h1 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 700;
   }
 }
 
-.font-display {
-  font-family: 'Oswald', 'Montserrat', sans-serif;
+/* === Composants UI Dossi'Com === */
+.text-caption {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
 }
 
-.dc-card {
-  background-color: #FFFFFF;
-  border: 1px solid #CBD5E1;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(11, 42, 91, 0.06);
+.dossi-card {
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 10px -2px rgba(11, 42, 91, 0.06);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
-.dc-h1 {
-  font-family: 'Oswald', 'Montserrat', sans-serif;
+.dossi-kpi {
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px -2px rgba(11, 42, 91, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dossi-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px -4px rgba(11, 42, 91, 0.09);
+}
+
+.kpi-navy {
+  border-left-color: #0B2A5B;
+}
+
+.kpi-turquoise {
+  border-left-color: #0E7C86;
+}
+
+.kpi-warning {
+  border-left-color: #B85C00;
+}
+
+.kpi-institutional {
+  border-left-color: #1FAFB5;
+}
+
+.kpi-critical {
+  border-left-color: #C8102E;
+}
+
+/* === Boutons === */
+.btn-primary {
+  background-color: var(--color-navy);
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: background-color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-royal);
+  box-shadow: 0 4px 12px -2px rgba(11, 79, 158, 0.28);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  color: var(--color-navy);
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-bg);
+  border-color: var(--color-royal);
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  color: #ffffff;
   font-weight: 700;
-  font-size: 1.5rem;
-  line-height: 1.25;
-  color: #0B2A5B;
+  border-radius: 0.5rem;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-@media (min-width: 640px) {
-  .dc-h1 {
-    font-size: 1.65rem;
+.btn-danger:hover:not(:disabled) {
+  background-color: #a30d25;
+  box-shadow: 0 4px 12px -2px rgba(200, 16, 46, 0.32);
+}
+
+/* === Tableaux === */
+.dossi-table thead {
+  background-color: #F6F9FC;
+  color: var(--color-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* === Animations Tableau de bord public (PublicDashboard.jsx) === */
+@keyframes dossi-ecg-wave {
+  0% {
+    stroke-dashoffset: 620;
+  }
+  100% {
+    stroke-dashoffset: 0;
   }
 }
 
-.dc-h2 {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #0B2A5B;
+.ecg-wave {
+  stroke-dasharray: 620;
+  stroke-dashoffset: 620;
+  animation: dossi-ecg-wave 3.2s linear infinite;
 }
 
-.dc-btn-primary {
+@keyframes dossi-fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: dossi-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes dossi-live-ping {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+.dossi-live-dot {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  background-color: #0B2A5B;
-  color: #FFFFFF;
-  font-weight: 600;
-  font-size: 0.875rem;
-  padding: 0.625rem 1rem;
-  border-radius: 8px;
-  transition: background-color 0.15s ease;
 }
 
-.dc-btn-primary:hover:not(:disabled) {
-  background-color: #0B4F9E;
+.dossi-live-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background-color: currentColor;
+  animation: dossi-live-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-.dc-btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* === Animations arrière-plan Extranet (LoginPage & RegisterPage) === */
+@keyframes dossi-orb-drift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(36px, -28px, 0) scale(1.1);
+  }
 }
 
-.dc-btn-outline {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background-color: #FFFFFF;
-  color: #0B2A5B;
-  border: 1px solid #94A3B8;
-  font-weight: 600;
-  font-size: 0.875rem;
-  padding: 0.625rem 1rem;
-  border-radius: 8px;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+@keyframes dossi-orb-drift-reverse {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-34px, 28px, 0) scale(1.08);
+  }
 }
 
-.dc-btn-outline:hover {
-  background-color: #EEF3F9;
-  border-color: #0B4F9E;
+@keyframes dossi-cross-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.38;
+  }
+  50% {
+    transform: translateY(-18px) rotate(12deg);
+    opacity: 0.72;
+  }
 }
 
-.no-scrollbar {
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+@keyframes dossi-ecg-sweep {
+  0% {
+    stroke-dashoffset: 1440;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+@keyframes dossi-ring-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.75);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.45);
+    opacity: 0;
+  }
+}
+
+@keyframes dossi-card-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.extranet-orb-1 {
+  animation: dossi-orb-drift 9s ease-in-out infinite;
+}
+
+.extranet-orb-2 {
+  animation: dossi-orb-drift-reverse 11s ease-in-out infinite;
+}
+
+.extranet-cross {
+  animation: dossi-cross-float 5.5s ease-in-out infinite;
+}
+
+.extranet-ecg-line {
+  stroke-dasharray: 1440;
+  stroke-dashoffset: 1440;
+  animation: dossi-ecg-sweep 4.5s linear infinite;
+}
+
+.extranet-pulse-ring {
+  animation: dossi-ring-pulse 5s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+.extranet-card-enter {
+  animation: dossi-card-appear 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
