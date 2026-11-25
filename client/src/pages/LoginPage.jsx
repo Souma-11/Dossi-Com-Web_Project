@@ -2,9 +2,54 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+const ROLE_CONFIGS = {
+  accueil: {
+    label: 'Espace Accueil',
+    subtitle: 'Enregistrement administratif et ouverture des passages',
+    placeholder: 'accueil@dossicom.tn',
+    badgeClass: 'bg-[#0B4F9E]/10 text-[#0B4F9E] border-[#0B4F9E]/25',
+    dotClass: 'bg-[#0B4F9E]',
+    buttonLabel: 'Accéder à l’Espace Accueil',
+  },
+  infirmier: {
+    label: 'Espace Infirmier',
+    subtitle: 'Évaluation clinique, triage P1 à P4 et alertes',
+    placeholder: 'infirmier@dossicom.tn',
+    badgeClass: 'bg-[#0E7C86]/10 text-[#0E7C86] border-[#0E7C86]/25',
+    dotClass: 'bg-[#0E7C86]',
+    buttonLabel: 'Accéder à l’Espace Infirmier',
+  },
+  medecin: {
+    label: 'Espace Médecin',
+    subtitle: 'Consultation médicale, examens et orientation',
+    placeholder: 'medecin@dossicom.tn',
+    badgeClass: 'bg-[#0B2A5B]/10 text-[#0B2A5B] border-[#0B2A5B]/25',
+    dotClass: 'bg-[#0B2A5B]',
+    buttonLabel: 'Accéder à l’Espace Médecin',
+  },
+  responsable: {
+    label: 'Espace Responsable',
+    subtitle: 'Supervision du service, box et équipes en garde',
+    placeholder: 'responsable@dossicom.tn',
+    badgeClass: 'bg-[#12304F]/10 text-[#12304F] border-[#12304F]/25',
+    dotClass: 'bg-[#12304F]',
+    buttonLabel: 'Accéder à l’Espace Responsable',
+  },
+  patient: {
+    label: 'Espace Patient',
+    subtitle: 'Suivi de votre passage aux urgences en temps réel',
+    placeholder: 'patient@dossicom.tn',
+    badgeClass: 'bg-[#1FAFB5]/15 text-[#0E7C86] border-[#1FAFB5]/30',
+    dotClass: 'bg-[#1FAFB5]',
+    buttonLabel: 'Accéder à l’Espace Patient',
+  },
+};
+
 export default function LoginPage({ onLogin }) {
   const [searchParams] = useSearchParams();
   const rolePreselectionne = searchParams.get('role');
+  const roleConfig = rolePreselectionne ? ROLE_CONFIGS[rolePreselectionne] || null : null;
+  const afficherInscriptionPatient = !roleConfig || rolePreselectionne === 'patient';
 
   const [identifiant, setIdentifiant] = useState('');
   const [password, setPassword] = useState('');
@@ -131,7 +176,7 @@ export default function LoginPage({ onLogin }) {
 
       {/* Carte centrale Extranet */}
       <div className="relative z-10 dossi-card extranet-card-enter w-full max-w-md p-6 sm:p-8 space-y-6 bg-white/95 backdrop-blur-md shadow-xl">
-        {/* En-tête : Logo officiel + Extranet */}
+        {/* En-tête : Logo officiel + Espace ciblé ou Extranet */}
         <div className="flex flex-col items-center text-center">
           <Link to="/" className="flex flex-col items-center gap-2 mb-3">
             <svg
@@ -169,10 +214,34 @@ export default function LoginPage({ onLogin }) {
             </span>
           </Link>
 
-          <h1 className="text-3xl font-bold text-[#0B2A5B]">Extranet</h1>
-          <p className="text-sm text-[#5B6675] mt-1">
-            Identifiant et mot de passe
-          </p>
+          {roleConfig ? (
+            <>
+              <div className="inline-flex items-center gap-2 mb-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold ${roleConfig.badgeClass}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${roleConfig.dotClass}`} />
+                  Extranet · Profil présélectionné
+                </span>
+                <Link
+                  to="/login"
+                  title="Revenir à la connexion générique"
+                  className="text-xs font-medium text-[#5B6675] hover:text-[#0B2A5B] underline"
+                >
+                  Changer
+                </Link>
+              </div>
+              <h1 className="text-3xl font-bold text-[#0B2A5B]">{roleConfig.label}</h1>
+              <p className="text-sm text-[#5B6675] mt-1">{roleConfig.subtitle}</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold text-[#0B2A5B]">Extranet</h1>
+              <p className="text-sm text-[#5B6675] mt-1">
+                Connexion unifiée · Redirection selon votre profil
+              </p>
+            </>
+          )}
         </div>
 
         {/* Alerte d'erreur */}
@@ -199,10 +268,11 @@ export default function LoginPage({ onLogin }) {
               name="identifiant"
               type="text"
               autoComplete="username"
+              placeholder={roleConfig ? roleConfig.placeholder : 'identifiant@dossicom.tn'}
               required
               value={identifiant}
               onChange={(e) => setIdentifiant(e.target.value)}
-              className="w-full rounded-lg border border-[#D5DEEA] bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#0B4F9E] focus:outline-none focus:ring-2 focus:ring-[#0B4F9E]/20"
+              className="w-full rounded-lg border border-[#D5DEEA] bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0B4F9E] focus:outline-none focus:ring-2 focus:ring-[#0B4F9E]/20"
             />
           </div>
 
@@ -219,10 +289,11 @@ export default function LoginPage({ onLogin }) {
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
+                placeholder="••••••••••••"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-[#D5DEEA] bg-white px-3.5 py-2.5 pr-16 text-sm text-slate-900 focus:border-[#0B4F9E] focus:outline-none focus:ring-2 focus:ring-[#0B4F9E]/20"
+                className="w-full rounded-lg border border-[#D5DEEA] bg-white px-3.5 py-2.5 pr-16 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0B4F9E] focus:outline-none focus:ring-2 focus:ring-[#0B4F9E]/20"
               />
               <button
                 type="button"
@@ -239,7 +310,11 @@ export default function LoginPage({ onLogin }) {
             disabled={loading}
             className="btn-primary w-full py-2.5 px-4 text-sm cursor-pointer disabled:opacity-60"
           >
-            {loading ? 'Connexion en cours...' : 'Se connecter'}
+            {loading
+              ? 'Connexion en cours...'
+              : roleConfig
+              ? roleConfig.buttonLabel
+              : 'Se connecter'}
           </button>
 
           <div className="text-center">
@@ -257,14 +332,20 @@ export default function LoginPage({ onLogin }) {
           </div>
         </form>
 
-        {/* Séparateur & Création de compte patient */}
+        {/* Séparateur & Création de compte patient (conditionnelle selon le rôle) */}
         <div className="border-t border-[#D5DEEA] pt-5 space-y-4">
-          <Link
-            to="/register"
-            className="btn-secondary block w-full py-2.5 px-4 text-sm text-center"
-          >
-            Créer un compte patient
-          </Link>
+          {afficherInscriptionPatient ? (
+            <Link
+              to="/register"
+              className="btn-secondary block w-full py-2.5 px-4 text-sm text-center"
+            >
+              Créer un compte patient
+            </Link>
+          ) : (
+            <p className="text-xs text-center text-[#5B6675] bg-[#EEF3F9]/80 rounded-lg px-3 py-2.5 border border-[#D5DEEA]">
+              Accès réservé au personnel habilité. Votre compte est créé par le responsable du service.
+            </p>
+          )}
 
           <div className="text-center">
             <Link

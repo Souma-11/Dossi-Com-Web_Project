@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import AnimatedBackground from '../components/common/AnimatedBackground';
 
 const ESPACES = [
   {
@@ -263,253 +264,257 @@ export default function PublicDashboard({ stats }) {
         };
 
   return (
-    <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Bandeau principal : Service des urgences avec tracé ECG animé */}
-      <section
-        id="service"
-        className="animate-fade-up relative overflow-hidden bg-[#0B2A5B] text-white rounded-lg p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-      >
-        <svg
-          className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 w-[540px] h-28 hidden sm:block"
-          viewBox="0 0 540 100"
-          fill="none"
-          aria-hidden="true"
+    <>
+      <AnimatedBackground />
+
+      <div className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Bandeau principal : Service des urgences avec tracé ECG animé */}
+        <section
+          id="service"
+          className="animate-fade-up relative overflow-hidden bg-[#0B2A5B] text-white rounded-lg p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
-          <path
-            className="ecg-wave"
-            d="M0 55 H160 L175 45 L188 55 H205 L218 18 L232 84 L246 34 L258 55 H285 L302 42 L318 55 H540"
-            stroke="#1FAFB5"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#1FAFB5] mb-1.5">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1FAFB5] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#1FAFB5]" />
-            </span>
-            <span>Suivi public agrégé · Sans donnée nominative</span>
-          </div>
-
-          <h1
-            style={{ fontFamily: 'var(--font-title)', color: '#FFFFFF' }}
-            className="text-3xl sm:text-4xl font-bold"
+          <svg
+            className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 w-[540px] h-28 hidden sm:block"
+            viewBox="0 0 540 100"
+            fill="none"
+            aria-hidden="true"
           >
-            Service des urgences
-          </h1>
-          <p className="text-sm sm:text-base text-slate-200 mt-1">
-            Situation du service en temps réel
-          </p>
-        </div>
-
-        <div className="relative z-10 shrink-0">
-          <Link
-            to="/login"
-            className="inline-flex items-center justify-center bg-[#0E7C86] hover:bg-[#1FAFB5] text-white font-semibold text-sm px-5 py-2.5 rounded-lg transition-colors"
-          >
-            Accéder à l’Extranet
-          </Link>
-        </div>
-      </section>
-
-      {/* 4 Indicateurs clés animés et réactifs selon les seuils */}
-      <section
-        aria-label="Indicateurs du service en temps réel"
-        className="animate-fade-up"
-        style={{ animationDelay: '80ms' }}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* 1. Saturation + Jauge animée */}
-          <div className={`dossi-kpi p-5 flex flex-col justify-between ${etatSaturation.cardClass}`}>
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-sm font-medium text-[#5B6675]">
-                  Saturation
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${etatSaturation.badgeClass}`}
-                >
-                  {etatSaturation.isCritical && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#C8102E] animate-ping" />
-                  )}
-                  {etatSaturation.badgeText}
-                </span>
-              </div>
-
-              <p className={`text-3xl font-bold tabular-nums ${etatSaturation.valueColor}`}>
-                {String(animSaturation).padStart(2, '0')} %
-              </p>
-            </div>
-
-            <div
-              className="w-full h-1.5 bg-[#EEF3F9] rounded-full overflow-hidden mt-3"
-              role="progressbar"
-              aria-valuenow={saturationVal}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Taux de saturation du service"
-            >
-              <div
-                className={`h-full rounded-full transition-all duration-700 ease-out ${etatSaturation.barColor}`}
-                style={{ width: `${saturationVal}%` }}
-              />
-            </div>
-          </div>
-
-          {/* 2. Médecins présents */}
-          <div className={`dossi-kpi p-5 flex flex-col justify-between ${etatMedecins.cardClass}`}>
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-sm font-medium text-[#5B6675]">
-                Médecins présents
-              </span>
-              <span
-                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${etatMedecins.badgeClass}`}
-              >
-                {etatMedecins.isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#1B7F4B]" />
-                )}
-                {etatMedecins.badgeText}
-              </span>
-            </div>
-
-            <p className={`text-3xl font-bold tabular-nums ${etatMedecins.valueColor}`}>
-              {String(animMedecins).padStart(2, '0')}
-            </p>
-          </div>
-
-          {/* 3. Patients en attente */}
-          <div className={`dossi-kpi p-5 flex flex-col justify-between ${etatAttente.cardClass}`}>
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-sm font-medium text-[#5B6675]">
-                Patients en attente
-              </span>
-              <span
-                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${etatAttente.badgeClass}`}
-              >
-                {etatAttente.isCritical && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C8102E] animate-ping" />
-                )}
-                {etatAttente.badgeText}
-              </span>
-            </div>
-
-            <p className={`text-3xl font-bold tabular-nums ${etatAttente.valueColor}`}>
-              {String(animAttente).padStart(2, '0')}
-            </p>
-          </div>
-
-          {/* 4. Attente moyenne */}
-          <div className={`dossi-kpi p-5 flex flex-col justify-between ${etatDelai.cardClass}`}>
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-sm font-medium text-[#5B6675]">
-                Attente moyenne
-              </span>
-              <span
-                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${etatDelai.badgeClass}`}
-              >
-                {etatDelai.isCritical && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C8102E] animate-ping" />
-                )}
-                {etatDelai.badgeText}
-              </span>
-            </div>
-
-            <p className={`text-3xl font-bold tabular-nums ${etatDelai.valueColor}`}>
-              {String(animDelai).padStart(2, '0')} min
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Accès aux 5 espaces avec photos */}
-      <section
-        id="espaces"
-        className="animate-fade-up space-y-4"
-        style={{ animationDelay: '160ms' }}
-      >
-        <div className="flex items-center justify-between">
-          <h2>Accès aux espaces</h2>
-          <span className="text-caption hidden sm:inline">
-            Connexion sécurisée selon votre profil
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {ESPACES.map((espace) => (
-            <EspaceCard key={espace.id} espace={espace} />
-          ))}
-        </div>
-      </section>
-
-      {/* Votre parcours aux urgences */}
-      <section
-        className="animate-fade-up dossi-card p-6 space-y-6"
-        style={{ animationDelay: '240ms' }}
-      >
-        <div>
-          <h2>Votre parcours aux urgences</h2>
-          <p className="text-caption mt-1">
-            Les 5 étapes de votre prise en charge au sein du service
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {ETAPES_PARCOURS.map((etape, index) => (
-            <div
-              key={etape.numero}
-              className="relative flex flex-col items-start md:items-center md:text-center p-4 rounded-lg bg-[#EEF3F9]/60 border border-[#D5DEEA] transition-colors hover:border-[#1FAFB5]"
-            >
-              <div className="w-9 h-9 rounded-full bg-[#0B2A5B] text-white font-bold text-sm flex items-center justify-center tabular-nums mb-3">
-                {index + 1}
-              </div>
-              <h3 className="text-sm font-bold text-[#0B2A5B]">
-                {etape.titre}
-              </h3>
-              <p className="text-xs text-[#5B6675] mt-1 leading-relaxed">
-                {etape.detail}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Encadré Urgence vitale : 190 */}
-      <section
-        aria-label="Numéro d'urgence vitale"
-        className="animate-fade-up dossi-card border-l-4 border-l-[#C8102E] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-        style={{ animationDelay: '320ms' }}
-      >
-        <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-lg bg-[#C8102E]/10 text-[#C8102E] flex items-center justify-center shrink-0 mt-0.5">
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+            <path
+              className="ecg-wave"
+              d="M0 55 H160 L175 45 L188 55 H205 L218 18 L232 84 L246 34 L258 55 H285 L302 42 L318 55 H540"
+              stroke="#1FAFB5"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              aria-hidden="true"
+            />
+          </svg>
+
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#1FAFB5] mb-1.5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1FAFB5] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#1FAFB5]" />
+              </span>
+              <span>Suivi public agrégé · Sans donnée nominative</span>
+            </div>
+
+            <h1
+              style={{ fontFamily: 'var(--font-title)', color: '#FFFFFF' }}
+              className="text-3xl sm:text-4xl font-bold"
             >
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="text-[#C8102E] font-bold">
-              Urgence vitale ? Appelez le 190
-            </h2>
-            <p className="text-sm text-[#5B6675] mt-1">
-              En cas de détresse respiratoire, douleur thoracique intense,
-              perte de connaissance ou hémorragie importante, contactez
-              immédiatement le SAMU (190) ou présentez-vous directement à
-              l’accueil des urgences.
+              Service des urgences
+            </h1>
+            <p className="text-sm sm:text-base text-slate-200 mt-1">
+              Situation du service en temps réel
             </p>
           </div>
-        </div>
-      </section>
-    </div>
+
+          <div className="relative z-10 shrink-0">
+            <Link
+              to="/login"
+              className="inline-flex items-center justify-center bg-[#0E7C86] hover:bg-[#1FAFB5] text-white font-semibold text-sm px-5 py-2.5 rounded-lg transition-colors"
+            >
+              Accéder à l’Extranet
+            </Link>
+          </div>
+        </section>
+
+        {/* 4 Indicateurs clés animés et réactifs selon les seuils */}
+        <section
+          aria-label="Indicateurs du service en temps réel"
+          className="animate-fade-up"
+          style={{ animationDelay: '80ms' }}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 1. Saturation + Jauge animée */}
+            <div className={`dossi-kpi p-5 flex flex-col justify-between ${etatSaturation.cardClass}`}>
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-sm font-medium text-[#5B6675]">
+                    Saturation
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${etatSaturation.badgeClass}`}
+                  >
+                    {etatSaturation.isCritical && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#C8102E] animate-ping" />
+                    )}
+                    {etatSaturation.badgeText}
+                  </span>
+                </div>
+
+                <p className={`text-3xl font-bold tabular-nums ${etatSaturation.valueColor}`}>
+                  {String(animSaturation).padStart(2, '0')} %
+                </p>
+              </div>
+
+              <div
+                className="w-full h-1.5 bg-[#EEF3F9] rounded-full overflow-hidden mt-3"
+                role="progressbar"
+                aria-valuenow={saturationVal}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Taux de saturation du service"
+              >
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ease-out ${etatSaturation.barColor}`}
+                  style={{ width: `${saturationVal}%` }}
+                />
+              </div>
+            </div>
+
+            {/* 2. Médecins présents */}
+            <div className={`dossi-kpi p-5 flex flex-col justify-between ${etatMedecins.cardClass}`}>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-sm font-medium text-[#5B6675]">
+                  Médecins présents
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${etatMedecins.badgeClass}`}
+                >
+                  {etatMedecins.isActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1B7F4B]" />
+                  )}
+                  {etatMedecins.badgeText}
+                </span>
+              </div>
+
+              <p className={`text-3xl font-bold tabular-nums ${etatMedecins.valueColor}`}>
+                {String(animMedecins).padStart(2, '0')}
+              </p>
+            </div>
+
+            {/* 3. Patients en attente */}
+            <div className={`dossi-kpi p-5 flex flex-col justify-between ${etatAttente.cardClass}`}>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-sm font-medium text-[#5B6675]">
+                  Patients en attente
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${etatAttente.badgeClass}`}
+                >
+                  {etatAttente.isCritical && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C8102E] animate-ping" />
+                  )}
+                  {etatAttente.badgeText}
+                </span>
+              </div>
+
+              <p className={`text-3xl font-bold tabular-nums ${etatAttente.valueColor}`}>
+                {String(animAttente).padStart(2, '0')}
+              </p>
+            </div>
+
+            {/* 4. Attente moyenne */}
+            <div className={`dossi-kpi p-5 flex flex-col justify-between ${etatDelai.cardClass}`}>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-sm font-medium text-[#5B6675]">
+                  Attente moyenne
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${etatDelai.badgeClass}`}
+                >
+                  {etatDelai.isCritical && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C8102E] animate-ping" />
+                  )}
+                  {etatDelai.badgeText}
+                </span>
+              </div>
+
+              <p className={`text-3xl font-bold tabular-nums ${etatDelai.valueColor}`}>
+                {String(animDelai).padStart(2, '0')} min
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Accès aux 5 espaces avec photos */}
+        <section
+          id="espaces"
+          className="animate-fade-up space-y-4"
+          style={{ animationDelay: '160ms' }}
+        >
+          <div className="flex items-center justify-between">
+            <h2>Accès aux espaces</h2>
+            <span className="text-caption hidden sm:inline">
+              Connexion sécurisée selon votre profil
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {ESPACES.map((espace) => (
+              <EspaceCard key={espace.id} espace={espace} />
+            ))}
+          </div>
+        </section>
+
+        {/* Votre parcours aux urgences */}
+        <section
+          className="animate-fade-up dossi-card p-6 space-y-6"
+          style={{ animationDelay: '240ms' }}
+        >
+          <div>
+            <h2>Votre parcours aux urgences</h2>
+            <p className="text-caption mt-1">
+              Les 5 étapes de votre prise en charge au sein du service
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {ETAPES_PARCOURS.map((etape, index) => (
+              <div
+                key={etape.numero}
+                className="group relative flex flex-col items-start md:items-center md:text-center p-4 rounded-lg bg-[#EEF3F9]/60 border border-[#D5DEEA] transition-all duration-300 hover:-translate-y-1 hover:bg-[#0B2A5B] hover:border-[#1FAFB5] hover:shadow-md cursor-default"
+              >
+                <div className="w-9 h-9 rounded-full bg-[#0B2A5B] text-white font-bold text-sm flex items-center justify-center tabular-nums mb-3 transition-colors duration-300 group-hover:bg-[#1FAFB5] group-hover:text-[#0B2A5B]">
+                  {index + 1}
+                </div>
+                <h3 className="text-sm font-bold text-[#0B2A5B] transition-colors duration-300 group-hover:text-white">
+                  {etape.titre}
+                </h3>
+                <p className="text-xs text-[#5B6675] mt-1 leading-relaxed transition-colors duration-300 group-hover:text-slate-200">
+                  {etape.detail}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Encadré Urgence vitale : 190 */}
+        <section
+          aria-label="Numéro d'urgence vitale"
+          className="animate-fade-up dossi-card border-l-4 border-l-[#C8102E] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          style={{ animationDelay: '320ms' }}
+        >
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-lg bg-[#C8102E]/10 text-[#C8102E] flex items-center justify-center shrink-0 mt-0.5">
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-[#C8102E] font-bold">
+                Urgence vitale ? Appelez le 190
+              </h2>
+              <p className="text-sm text-[#5B6675] mt-1">
+                En cas de détresse respiratoire, douleur thoracique intense,
+                perte de connaissance ou hémorragie importante, contactez
+                immédiatement le SAMU (190) ou présentez-vous directement à
+                l’accueil des urgences.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </>
   );
 }

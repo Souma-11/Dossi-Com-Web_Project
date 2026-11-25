@@ -302,3 +302,88 @@
 .extranet-card-enter {
   animation: dossi-card-appear 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* === Animations arrière-plan globales des espaces (AnimatedBackground.jsx) === */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(24px, -18px, 0) scale(1.06);
+  }
+}
+
+@keyframes floatSlowReverse {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-22px, 20px, 0) scale(1.05);
+  }
+}
+
+@keyframes spaceCrossFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.22;
+  }
+  50% {
+    transform: translateY(-14px) rotate(10deg);
+    opacity: 0.48;
+  }
+}
+
+@keyframes spacePulseRing {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.28;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.35);
+    opacity: 0;
+  }
+}
+
+.bg-medical-grid {
+  background-size: 36px 36px;
+  background-image:
+    linear-gradient(to right, rgba(14, 124, 134, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(14, 124, 134, 0.05) 1px, transparent 1px);
+}
+
+.animate-float-slow {
+  animation: floatSlow 14s ease-in-out infinite;
+}
+
+.animate-float-slow-reverse {
+  animation: floatSlowReverse 18s ease-in-out infinite;
+}
+
+.bg-space-ecg {
+  stroke-dasharray: 1440;
+  stroke-dashoffset: 1440;
+  animation: dossi-ecg-sweep 7.5s linear infinite;
+}
+
+.bg-space-cross {
+  animation: spaceCrossFloat 7s ease-in-out infinite;
+}
+
+.bg-space-pulse {
+  animation: spacePulseRing 6.5s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-slow,
+  .animate-float-slow-reverse,
+  .bg-space-ecg,
+  .bg-space-cross,
+  .bg-space-pulse,
+  .extranet-orb-1,
+  .extranet-orb-2,
+  .extranet-cross,
+  .extranet-ecg-line,
+  .extranet-pulse-ring {
+    animation: none;
+  }
+}

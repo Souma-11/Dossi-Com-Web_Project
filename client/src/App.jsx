@@ -1,10 +1,18 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { useDossiComSync } from './hooks/useDossiComSync';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import AnimatedBackground from './components/common/AnimatedBackground';
 
 // Pages publiques chargées immédiatement pour un affichage initial rapide
 import PublicDashboard from './pages/PublicDashboard';
@@ -17,6 +25,14 @@ const InfirmierDashboard = lazy(() => import('./pages/InfirmierDashboard'));
 const MedecinDashboard = lazy(() => import('./pages/MedecinDashboard'));
 const ResponsableDashboard = lazy(() => import('./pages/ResponsableDashboard'));
 const PatientDashboard = lazy(() => import('./pages/PatientDashboard'));
+
+const ESPACE_PREFIXES = [
+  '/accueil',
+  '/infirmier',
+  '/medecin',
+  '/responsable',
+  '/patient',
+];
 
 function PageLoader() {
   return (
@@ -36,6 +52,11 @@ function PageLoader() {
 function AppLayout() {
   const { publicStats, alertCount, logout } = useDossiComSync();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isEspacePage = ESPACE_PREFIXES.some((prefix) =>
+    location.pathname.startsWith(prefix)
+  );
 
   const handleLogout = () => {
     logout();
@@ -43,10 +64,12 @@ function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#EEF3F9] text-[#0F172A]">
+    <div className="relative min-h-screen flex flex-col text-[#0F172A]">
+      {isEspacePage && <AnimatedBackground />}
+
       <Navbar alertCount={alertCount} onLogout={handleLogout} />
 
-      <main className="flex-1">
+      <main className="relative z-10 flex-1 flex flex-col">
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Pages publiques */}

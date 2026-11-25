@@ -62,6 +62,11 @@ export default function Navbar() {
     navigate('/', { replace: true });
   };
 
+  const scrollToTop = () => {
+    setMobileOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Navigation centrale limitée à 3 liens courts sur une seule ligne
   const getNavItems = () => {
     if (!user) {
@@ -113,11 +118,10 @@ export default function Navbar() {
   };
 
   const navItems = getNavItems();
-  const homeDestination = user && role ? `/${role}` : '/';
 
   const linkClassName = ({ isActive }) =>
     `relative inline-flex items-center gap-2 whitespace-nowrap py-6 text-sm font-medium transition-colors border-b-2 ${
-      isActive
+      isActive && !location.hash
         ? 'border-[#0B2A5B] text-[#0B2A5B] font-semibold'
         : 'border-transparent text-[#5B6675] hover:text-[#0B2A5B]'
     }`;
@@ -125,11 +129,12 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-[#D5DEEA]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between gap-4">
-        {/* 1. Logo officiel Dossi'Com (identique sur tous les écrans) */}
+        {/* 1. Logo officiel Dossi'Com -> Retour en haut de l'accueil public */}
         <Link
-          to={homeDestination}
-          onClick={() => setMobileOpen(false)}
-          className="flex items-center gap-2.5 shrink-0"
+          to="/"
+          onClick={scrollToTop}
+          title="Retour à l’accueil public Dossi’Com"
+          className="flex items-center gap-2.5 shrink-0 transition-opacity hover:opacity-90"
         >
           <svg
             className="w-9 h-9"
@@ -166,7 +171,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* 2. Liens centraux sur une seule ligne (sans retour à la ligne) */}
+        {/* 2. Liens centraux sur une seule ligne */}
         <nav
           aria-label="Navigation principale"
           className="hidden md:flex items-center gap-8"
@@ -189,6 +194,7 @@ export default function Navbar() {
                 key={item.to}
                 to={item.to}
                 end={item.end}
+                onClick={scrollToTop}
                 className={linkClassName}
               >
                 <span>{item.label}</span>
@@ -202,21 +208,27 @@ export default function Navbar() {
           )}
         </nav>
 
-        {/* 3. Zone droite : Extranet (visiteur) ou Profil + Déconnexion (connecté) */}
+        {/* 3. Zone droite : Extranet (visiteur) ou Profil cliquable + Déconnexion (connecté) */}
         <div className="hidden md:flex items-center gap-3 shrink-0">
           {!user ? (
             <Link
               to="/login"
+              onClick={scrollToTop}
               className="btn-primary px-5 py-2.5 text-sm whitespace-nowrap"
             >
               Extranet
             </Link>
           ) : (
             <>
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#EEF3F9] border border-[#D5DEEA] text-xs font-semibold text-[#0B2A5B] whitespace-nowrap">
+              <Link
+                to={role ? `/${role}` : '/'}
+                onClick={scrollToTop}
+                title="Accéder à mon espace"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#EEF3F9] border border-[#D5DEEA] text-xs font-semibold text-[#0B2A5B] whitespace-nowrap transition-colors hover:border-[#0E7C86] hover:bg-white"
+              >
                 <span className="dossi-live-dot w-2 h-2 rounded-full bg-[#0E7C86] text-[#1FAFB5]" />
                 <span>{ROLE_LABELS[role] || role}</span>
-              </span>
+              </Link>
 
               <button
                 type="button"
@@ -272,10 +284,14 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t border-[#D5DEEA] bg-white px-4 py-4 space-y-3">
           {user && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#EEF3F9] text-xs font-semibold text-[#0B2A5B]">
+            <Link
+              to={role ? `/${role}` : '/'}
+              onClick={scrollToTop}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#EEF3F9] text-xs font-semibold text-[#0B2A5B] hover:border-[#0E7C86]"
+            >
               <span className="w-2 h-2 rounded-full bg-[#0E7C86]" />
               <span>{ROLE_LABELS[role] || role}</span>
-            </div>
+            </Link>
           )}
 
           <nav className="flex flex-col space-y-1">
@@ -294,10 +310,10 @@ export default function Navbar() {
                   key={item.to}
                   to={item.to}
                   end={item.end}
-                  onClick={() => setMobileOpen(false)}
+                  onClick={scrollToTop}
                   className={({ isActive }) =>
                     `flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium ${
-                      isActive
+                      isActive && !location.hash
                         ? 'bg-[#EEF3F9] text-[#0B2A5B] font-semibold'
                         : 'text-[#5B6675] hover:bg-[#EEF3F9] hover:text-[#0B2A5B]'
                     }`
@@ -318,7 +334,7 @@ export default function Navbar() {
             {!user ? (
               <Link
                 to="/login"
-                onClick={() => setMobileOpen(false)}
+                onClick={scrollToTop}
                 className="btn-primary block w-full py-2.5 text-sm text-center"
               >
                 Extranet

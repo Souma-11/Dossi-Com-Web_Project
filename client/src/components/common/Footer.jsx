@@ -1,13 +1,9 @@
 export default function Footer() {
   return (
-    <footer className="bg-white border-t border-[#D5DEEA] mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-center text-center">
-          <p className="text-xs sm:text-sm text-[#5B6675]">
-            © 2026 <span className="font-semibold text-[#0B2A5B]">Dossi’Com</span> — Vos dossiers santé, entre de bonnes mains.
-          </p>
-        </div>
-      </div>
+    <footer className="relative z-10 mt-auto border-t border-[#D5DEEA] bg-white py-5 px-4 text-center text-xs sm:text-sm text-[#5B6675]">
+      <p>
+        © 2026 <strong className="font-bold text-[#0B2A5B]">Dossi’Com</strong> — Vos dossiers santé, entre de bonnes mains.
+      </p>
     </footer>
   );
 }
